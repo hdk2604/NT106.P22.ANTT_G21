@@ -8,13 +8,15 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace WereWolf
+namespace WerewolfClient.Forms
 {
     public partial class LoginForm: Form
     {
         public LoginForm()
         {
             InitializeComponent();
+            txtPassword.UseSystemPasswordChar = true;
+
         }
 
         private void LoginForm_Load(object sender, EventArgs e)
