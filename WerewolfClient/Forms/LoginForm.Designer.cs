@@ -1,4 +1,4 @@
-﻿namespace WereWolf
+﻿namespace WerewolfClient.Forms
 {
     partial class LoginForm
     {
