@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using WerewolfClient.Models;
 
 namespace WerewolfClient.Forms
 {
@@ -45,7 +46,7 @@ namespace WerewolfClient.Forms
             {
                 MessageBox.Show("Đăng nhập thành công!");
                 this.Hide();
-              //  new MainGameForm().Show(); // Mở form game chính
+                new LobbyForm(CurrentUserManager.CurrentUser.Email).Show(); // Sử dụng email từ CurrentUserManager
             }
         }
 

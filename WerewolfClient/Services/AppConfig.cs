@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace WereWolf
+namespace WerewolfClient.Services
 {
     public static class AppConfig
     {

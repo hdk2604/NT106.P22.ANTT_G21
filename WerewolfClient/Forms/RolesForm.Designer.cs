@@ -1,6 +1,6 @@
 ﻿namespace WerewolfClient.Forms
 {
-    partial class RolesFrom
+    partial class RolesForm
     {
         /// <summary>
         /// Required designer variable.

@@ -8,15 +8,15 @@ using WerewolfClient.Models;
 
 public class FirebaseHelper
 {
-    private readonly FirebaseClient firebase;
+    public readonly FirebaseClient firebase;
 
     public FirebaseHelper()
     {
         firebase = new FirebaseClient(
-            "https://werewolf-d8260-default-rtdb.asia-southeast1.firebasedatabases.app/",
+            "https://werewolf-d83dd-default-rtdb.asia-southeast1.firebasedatabase.app/",
             new FirebaseOptions
             {
-                AuthTokenAsyncFactory = () => Task.FromResult("your-secret-if-using-auth")
+                AuthTokenAsyncFactory = () => Task.FromResult(CurrentUserManager.CurrentUser?.IdToken)
             });
     }
 
@@ -117,7 +117,8 @@ public class FirebaseHelper
             createdAt = DateTime.UtcNow.ToString("o"),
             creatorId = creatorId,
             currentPhase = "night",
-            roundNumber = 1
+            roundNumber = 1,
+            currentPlayerCount = 1 // Người tạo phòng là người chơi đầu tiên
         };
 
         var result = await firebase

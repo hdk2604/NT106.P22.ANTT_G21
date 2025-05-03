@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace WerewolfClient.Forms
 {
-    public partial class RolesFrom : Form
+    public partial class RolesForm : Form
     {
-        public RolesFrom()
+        public RolesForm()
         {
             InitializeComponent();
         }
