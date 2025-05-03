@@ -2,7 +2,9 @@
 using System.Windows.Forms;
 using Firebase.Auth;
 using Firebase.Auth.Providers;
-using WereWolf;
+using WerewolfClient;
+using WerewolfClient.Models;
+using WerewolfClient.Services;
 
 public static class FirebaseAuthHelper
 {
@@ -31,7 +33,12 @@ public static class FirebaseAuthHelper
         try
         {
             var client = GetAuthClient();
-            await client.SignInWithEmailAndPasswordAsync(email, password);
+            var result = await client.SignInWithEmailAndPasswordAsync(email, password);
+            string idToken = await result.User.GetIdTokenAsync();
+            
+            // Lưu thông tin user sau khi đăng nhập thành công
+            CurrentUserManager.SetCurrentUser(result.User.Uid, email, idToken);
+            
             return true;
         }
         catch (FirebaseAuthException ex)

@@ -8,21 +8,18 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace WereWolf
+namespace WerewolfClient.Forms
 {
-    public partial class RegisterForm: Form
+    public partial class RegisterForm : Form
     {
         public RegisterForm()
         {
             InitializeComponent();
+            txtPassword.UseSystemPasswordChar = true;
+            txtConfirmPassword.UseSystemPasswordChar = true;
         }
 
-        private void pictureBox1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void txtEmail_TextChanged(object sender, EventArgs e)
+        private void RegisterForm_Load(object sender, EventArgs e)
         {
 
         }
@@ -33,6 +30,12 @@ namespace WereWolf
             string password = txtPassword.Text;
             string confirmPassword = txtConfirmPassword.Text;
 
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(confirmPassword))
+            {
+                MessageBox.Show("Vui lòng nhập đầy đủ thông tin!");
+                return;
+            }
+
             if (password != confirmPassword)
             {
                 MessageBox.Show("Mật khẩu xác nhận không khớp!");
@@ -42,7 +45,7 @@ namespace WereWolf
             bool isSuccess = await FirebaseAuthHelper.RegisterAsync(email, password);
             if (isSuccess)
             {
-                MessageBox.Show("Đăng ký thành công! Vui lòng đăng nhập.");
+                MessageBox.Show("Đăng ký thành công!");
                 this.Hide();
                 new LoginForm().Show();
             }

@@ -1,4 +1,4 @@
-﻿namespace WereWolf
+﻿namespace WerewolfClient.Forms
 {
     partial class RegisterForm
     {
@@ -48,7 +48,6 @@
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
-            this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click);
             // 
             // txtEmail
             // 
@@ -56,7 +55,6 @@
             this.txtEmail.Name = "txtEmail";
             this.txtEmail.Size = new System.Drawing.Size(100, 20);
             this.txtEmail.TabIndex = 1;
-            this.txtEmail.TextChanged += new System.EventHandler(this.txtEmail_TextChanged);
             // 
             // txtPassword
             // 
@@ -90,7 +88,7 @@
             this.linkLogin.Size = new System.Drawing.Size(55, 13);
             this.linkLogin.TabIndex = 5;
             this.linkLogin.TabStop = true;
-            this.linkLogin.Text = "linkLabel1";
+            this.linkLogin.Text = "Đăng nhập";
             this.linkLogin.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkLogin_LinkClicked);
             // 
             // label1
@@ -99,9 +97,9 @@
             this.label1.Font = new System.Drawing.Font("Georgia", 8.25F);
             this.label1.Location = new System.Drawing.Point(645, 73);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(76, 14);
+            this.label1.Size = new System.Drawing.Size(35, 14);
             this.label1.TabIndex = 6;
-            this.label1.Text = "Werewolves";
+            this.label1.Text = "label1";
             // 
             // RegisterForm
             // 
@@ -116,11 +114,11 @@
             this.Controls.Add(this.txtEmail);
             this.Controls.Add(this.pictureBox1);
             this.Name = "RegisterForm";
-            this.Text = "Form1";
+            this.Text = "RegisterForm";
+            this.Load += new System.EventHandler(this.RegisterForm_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
-
         }
 
         #endregion
