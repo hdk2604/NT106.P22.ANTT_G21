@@ -166,4 +166,62 @@ public class FirebaseHelper
             .Child(gameId)
             .PostAsync(log);
     }
+    public async Task WereWolfAction(string gameId, string werewwolfId, string tagetplayerId)
+    {
+        var game = await GetGame(gameId);
+        if (game.CurrentPhase!="night")
+        {
+            throw new InvalidOperationException("Sói chỉ có thể chọn vào ban đêm");
+        }
+        await firebase
+            .Child("game")
+            .Child(gameId)
+            .Child("player")
+            .Child(werewwolfId)
+            .Child("VoteFor")
+            .PutAsync(tagetplayerId);
+        await AddGameLog(gameId, $"Werewolf {werewwolfId} has voted to kill {tagetplayerId}", "night");
+    }
+
+
+    // Trong FirebaseHelper.cs
+    public async Task ProcessNightResults(string gameId)
+    {
+        var players = await GetPlayers(gameId);
+        var werewolves = players.Where(p => p.Role == "werewolf" && p.IsAlive).ToList();
+        var alivePlayers = players.Where(p => p.IsAlive).ToList();
+
+        // Tính toán vote
+        var votes = werewolves
+            .Where(w => !string.IsNullOrEmpty(w.VotedFor))
+            .GroupBy(w => w.VotedFor)
+            .OrderByDescending(g => g.Count())
+            .FirstOrDefault();
+
+        if (votes != null)
+        {
+            string targetId = votes.Key;
+            await firebase
+                .Child("games")
+                .Child(gameId)
+                .Child("players")
+                .Child(targetId)
+                .Child("IsAlive")
+                .PutAsync(false);
+
+            await AddGameLog(gameId, $"Player {targetId} was killed by werewolves!", "night");
+        }
+
+        // Reset votes
+        foreach (var werewolf in werewolves)
+        {
+            await firebase
+                .Child("games")
+                .Child(gameId)
+                .Child("players")
+                .Child(werewolf.Id)
+                .Child("VotedFor")
+                .PutAsync(null);
+        }
+    }
 }
