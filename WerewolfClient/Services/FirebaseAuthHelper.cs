@@ -35,10 +35,19 @@ public static class FirebaseAuthHelper
             var client = GetAuthClient();
             var result = await client.SignInWithEmailAndPasswordAsync(email, password);
             string idToken = await result.User.GetIdTokenAsync();
-            
+
+             // Lấy username từ Firebase
+            string userId = result.User.Uid;
+            string username = await FirebaseHelper.GetUsernameAsync(userId, idToken);
+
             // Lưu thông tin user sau khi đăng nhập thành công
-            CurrentUserManager.SetCurrentUser(result.User.Uid, email, idToken);
-            
+             CurrentUserManager.CurrentUser = new WerewolfClient.Models.UserInfo
+            {
+                Id = userId,
+                Email = email,
+                IdToken = idToken,
+                Username = username
+            };
             return true;
         }
         catch (FirebaseAuthException ex)
@@ -48,12 +57,15 @@ public static class FirebaseAuthHelper
         }
     }
 
-    public static async Task<bool> RegisterAsync(string email, string password)
+    public static async Task<bool> RegisterAsync(string email, string password, string username)
     {
         try
         {
             var client = GetAuthClient();
-            await client.CreateUserWithEmailAndPasswordAsync(email, password);
+            var result = await client.CreateUserWithEmailAndPasswordAsync(email, password);
+            string userId = result.User.Uid;
+            string idToken = await result.User.GetIdTokenAsync();
+             await FirebaseHelper.SaveUsernameAsync(userId, username, email, idToken);
             return true;
         }
         catch (FirebaseAuthException ex)

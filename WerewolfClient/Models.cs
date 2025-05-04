@@ -11,6 +11,7 @@ namespace WerewolfClient.Models
         public string Id { get; set; }
         public string Email { get; set; }
         public string IdToken { get; set; }
+        public string Username { get; set; }
     }
 
     public class Player
@@ -28,14 +29,14 @@ namespace WerewolfClient.Models
     public class Game
     {
         public string Id { get; set; }
-        public string Name { get; set; }
         public string Status { get; set; } = "waiting";
         public string CurrentPhase { get; set; } = "night";
         public int RoundNumber { get; set; } = 1;
         public int MaxPlayers { get; set; } = 8;
         public string CreatorId { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-         public int CurrentPlayerCount { get; set; } // Thêm dòng này
+        public int CurrentPlayerCount { get; set; } // Thêm dòng này
+        public string RoomId { get; set; }
     }
 
     public class GameLog

@@ -10,6 +10,7 @@ using System.Windows.Forms;
 using WerewolfClient;
 using WerewolfClient.Models;
 using WerewolfClient.Services;
+using System.Net.Sockets;
 
 namespace WerewolfClient.Forms
 {
@@ -31,18 +32,59 @@ namespace WerewolfClient.Forms
             rolesForm.ShowDialog();
         }
 
-        private async void btnCreateRoom_Click(object sender, EventArgs e)
+       private async void btnCreateRoom_Click(object sender, EventArgs e)
         {
             try
             {
-                // Generate random 6-digit room ID
-                Random random = new Random();
-                string roomId = random.Next(100000, 999999).ToString();
+                // 1. Kết nối tới server
+                TcpClient client = new TcpClient("localhost", 8888);
+                NetworkStream stream = client.GetStream();
 
-                // Create room using FirebaseHelper with current user's ID
-                await _firebaseHelper.CreateGame(roomId, 8, CurrentUserManager.CurrentUser.Id);
+                // 2. Gửi CREATE_ROOM:<roomName>:<creatorName>
+                string roomName = "Phong Ma Soi"; // hoặc cho người dùng nhập tên phòng
+                string creatorName = CurrentUserManager.CurrentUser.Username;
+                string createRoomMsg = $"CREATE_ROOM:{roomName}:{creatorName}\n";
+                byte[] data = Encoding.UTF8.GetBytes(createRoomMsg);
+                stream.Write(data, 0, data.Length);
 
-                MessageBox.Show($"Phòng {roomId} đã được tạo thành công!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                // 3. Nhận phản hồi ROOM_CREATED:<roomId>
+                byte[] buffer = new byte[1024];
+                int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                string[] lines = response.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                string roomCreatedLine = lines.FirstOrDefault(l => l.StartsWith("ROOM_CREATED:"));
+                if (roomCreatedLine != null)
+                {
+                    // Lấy roomId từ server để lưu vào Firebase và truyền cho form
+                    string serverRoomId = roomCreatedLine.Split(':')[1];
+
+                    // 4. Lưu vào Firebase (tạo game mới, không có trường name)
+                    string firebaseRoomId = await _firebaseHelper.CreateGame(8, CurrentUserManager.CurrentUser.Id, serverRoomId);
+
+                    // 5. Thêm người chơi đầu tiên vào game
+                    var player = new Player
+                    {
+                        Id = CurrentUserManager.CurrentUser.Id,
+                        UserId = CurrentUserManager.CurrentUser.Id,
+                        Name = CurrentUserManager.CurrentUser.Username,
+                        Role = "villager",
+                        IsAlive = true,
+                        IsConnected = true,
+                        IsReady = true
+                    };
+                    await _firebaseHelper.AddPlayer(firebaseRoomId, player);
+
+                    // 6. Hiện GameRoomForm (truyền roomId từ server và client đã mở)
+                    this.Hide();
+                    GameRoomForm gameRoomForm = new GameRoomForm(creatorName, serverRoomId, true, client);
+                    gameRoomForm.FormClosed += (s, args) => this.Show();
+                    gameRoomForm.Show();
+                }
+                else
+                {
+                    MessageBox.Show("Không tạo được phòng!\nServer response: " + response, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    client.Close();
+                }
             }
             catch (Exception ex)
             {
@@ -78,11 +120,41 @@ namespace WerewolfClient.Forms
 
                 if (inputForm.ShowDialog() == DialogResult.OK)
                 {
-                    string roomId = textBox.Text;
+                    string roomId = textBox.Text.Trim();
                     if (!string.IsNullOrEmpty(roomId))
                     {
-                        // TODO: Implement find room logic
-                        MessageBox.Show($"Đang tìm phòng {roomId}...", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        try
+                        {
+                            // Kết nối tới server và gửi JOIN_ROOM
+                            TcpClient client = new TcpClient("localhost", 8888);
+                            NetworkStream stream = client.GetStream();
+                            string joinMsg = $"JOIN_ROOM:{roomId}:{CurrentUserManager.CurrentUser.Username}\n";
+                            byte[] data = Encoding.UTF8.GetBytes(joinMsg);
+                            stream.Write(data, 0, data.Length);
+
+                            // Chờ phản hồi từ server
+                            byte[] buffer = new byte[1024];
+                            int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                            string response = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
+                            string firstLine = response.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                            if (firstLine == "JOIN_SUCCESS")
+                            {
+                                // Mở GameRoomForm với kết nối này
+                                this.Hide();
+                                GameRoomForm gameRoomForm = new GameRoomForm(CurrentUserManager.CurrentUser.Username, roomId, false, client);
+                                gameRoomForm.FormClosed += (s, args) => this.Show();
+                                gameRoomForm.Show();
+                            }
+                            else
+                            {
+                                MessageBox.Show("Phòng không tồn tại hoặc không thể tham gia!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                client.Close();
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Không thể vào phòng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
                     }
                 }
             }
@@ -101,10 +173,7 @@ namespace WerewolfClient.Forms
 
         private void LobbyForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (e.CloseReason == CloseReason.UserClosing)
-            {
-                Application.Exit();
-            }
+            Application.Exit();
         }
     }
 }

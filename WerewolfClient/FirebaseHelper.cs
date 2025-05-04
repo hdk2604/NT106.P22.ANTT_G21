@@ -107,18 +107,18 @@ public class FirebaseHelper
 
 
     // Tạo game mới
-    public async Task<string> CreateGame(string gameName, int maxPlayers, string creatorId)
+    public async Task<string> CreateGame( int maxPlayers,string creatorId, string serverRoomId)
     {
         var game = new
         {
-            name = gameName,
             status = "waiting",
             maxPlayers = maxPlayers,
             createdAt = DateTime.UtcNow.ToString("o"),
             creatorId = creatorId,
             currentPhase = "night",
             roundNumber = 1,
-            currentPlayerCount = 1 // Người tạo phòng là người chơi đầu tiên
+            currentPlayerCount = 1, // Người tạo phòng là người chơi đầu tiên
+            roomId = serverRoomId // Thêm trường roomId là id từ server
         };
 
         var result = await firebase
@@ -165,5 +165,33 @@ public class FirebaseHelper
             .Child("gameLogs")
             .Child(gameId)
             .PostAsync(log);
+    }
+    public static async Task SaveUsernameAsync(string userId, string username, string email, string idToken)
+    {
+        var firebase = new FirebaseClient(
+            "https://werewolf-d83dd-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            new FirebaseOptions
+            {
+                AuthTokenAsyncFactory = () => Task.FromResult(idToken)
+            });
+        await firebase
+            .Child("users")
+            .Child(userId)
+            .PutAsync(new { username = username, email = email });
+    }
+
+    public static async Task<string> GetUsernameAsync(string userId, string idToken)
+    {
+        var firebase = new FirebaseClient(
+            "https://werewolf-d83dd-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            new FirebaseOptions
+            {
+                AuthTokenAsyncFactory = () => Task.FromResult(idToken)
+            });
+        var user = await firebase
+            .Child("users")
+            .Child(userId)
+            .OnceSingleAsync<dynamic>();
+        return user?.username ?? string.Empty;
     }
 }

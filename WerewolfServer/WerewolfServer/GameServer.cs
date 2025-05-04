@@ -10,7 +10,7 @@ namespace WerewolfServer
     public class GameServer
     {
         private TcpListener _server;
-        private Dictionary<string, Room> _rooms = new Dictionary<string, Room>();
+        private static Dictionary<string, Room> _rooms = new Dictionary<string, Room>();
         private int _port = 8888;
 
         public void Start()
@@ -87,23 +87,65 @@ namespace WerewolfServer
             {
                 switch (command)
                 {
-                    case "CREATE_ROOM":
+                     case "CREATE_ROOM":
+                        Console.WriteLine("[SERVER] Bắt đầu tạo phòng...");
                         if (parts.Length >= 3)
                         {
-                            string roomName = parts[1];
                             string creatorName = parts[2];
                             string roomId = Guid.NewGuid().ToString().Substring(0, 6).ToUpper();
-                            _rooms[roomId] = new Room(roomId, roomName);
-
-                            player = new Player(client, creatorName);
-                            _rooms[roomId].AddPlayer(player);
-
-                            response = $"ROOM_CREATED:{roomId}";
+                            Console.WriteLine($"[SERVER] roomId={roomId}, creatorName={creatorName}");
+                            try {
+                                _rooms[roomId] = new Room(roomId);
+                                Console.WriteLine("[SERVER] Đã tạo room object");
+                                player = new Player(client, creatorName);
+                                Console.WriteLine("[SERVER] Đã tạo player object");
+                                response = $"ROOM_CREATED:{roomId}";
+                                Console.WriteLine("[SERVER] response=" + response);
+                                if (!string.IsNullOrEmpty(response))
+                                {
+                                    byte[] data = Encoding.UTF8.GetBytes(response + "\n");
+                                    client.GetStream().Write(data, 0, data.Length);
+                                }
+                                _rooms[roomId].AddPlayer(player);
+                                Console.WriteLine("[SERVER] Đã add player vào room");
+                                response = "";
+                            } catch (Exception ex) {
+                                Console.WriteLine($"[SERVER] Lỗi khi tạo phòng: {ex.Message}\n{ex.StackTrace}");
+                            }
                         }
                         break;
-
-                        // Các case khác giữ nguyên nhưng thêm kiểm tra độ dài parts
-                        // ...
+                    case "JOIN_ROOM":
+                        if (parts.Length >= 3)
+                        {
+                            string roomId = parts[1];
+                            string joinName = parts[2];
+                            if (_rooms.ContainsKey(roomId))
+                            {
+                                player = new Player(client, joinName);
+                                byte[] joinSuccess = Encoding.UTF8.GetBytes("JOIN_SUCCESS\n");
+                                client.GetStream().Write(joinSuccess, 0, joinSuccess.Length);
+                                _rooms[roomId].AddPlayer(player);
+                                response = "";
+                            }
+                            else
+                            {
+                                response = "JOIN_FAIL";
+                            }
+                        }
+                        break;
+                    case "CHAT_MESSAGE":
+                        if (parts.Length >= 4)
+                        {
+                            string roomId = parts[1];
+                            string sender = parts[2];
+                            string msg = parts[3];
+                            if (_rooms.ContainsKey(roomId))
+                            {   
+                                Console.WriteLine($"[SERVER] Gửi tới {roomId}: {sender}:{msg}");
+                                _rooms[roomId].Broadcast($"CHAT_MESSAGE:{sender}:{msg}", "");
+                            }
+                        }
+                        break;
                 }
 
                 if (!string.IsNullOrEmpty(response))
@@ -127,13 +169,11 @@ namespace WerewolfServer
         public class Room
     {
         public string Id { get; }
-        public string Name { get; }
         public List<Player> Players { get; } = new List<Player>();
 
-        public Room(string id, string name)
+        public Room(string id)
         {
             Id = id;
-            Name = name;
         }
 
         public void AddPlayer(Player player)
@@ -153,23 +193,44 @@ namespace WerewolfServer
                 Broadcast($"PLAYER_LEFT:{playerName}", "");
                 Broadcast($"PLAYER_LIST:{string.Join(",", GetPlayerNames())}", "");
             }
+             if (Players.Count == 0)
+                {
+                        GameServer.RemoveRoom(Id);
+                }
         }
 
-        public void Broadcast(string message, string excludePlayerName)
-        {
-            foreach (var player in Players)
+       public void Broadcast(string message, string excludePlayerName)
             {
-                try
+                var disconnectedPlayers = new List<Player>();
+                foreach (var player in Players)
                 {
-                    if (player.Name != excludePlayerName)
+                    try
                     {
-                        byte[] data = Encoding.UTF8.GetBytes(message);
-                        player.Client.GetStream().Write(data, 0, data.Length);
+                        if (player.Name != excludePlayerName)
+                        {
+                            if (player.Client.Connected)
+                            {
+                                Console.WriteLine($"[SERVER] Gửi tới {player.Name}: {message}");
+                                byte[] data = Encoding.UTF8.GetBytes(message + "\n");
+                                player.Client.GetStream().Write(data, 0, data.Length);
+                            }
+                            else
+                            {
+                                disconnectedPlayers.Add(player);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[SERVER] Lỗi gửi tới {player.Name}: {ex.Message}");
+                        disconnectedPlayers.Add(player);
                     }
                 }
-                catch { /* Bỏ qua lỗi gửi */ }
+                foreach (var p in disconnectedPlayers)
+                {
+                    Players.Remove(p);
+                }
             }
-        }
 
         public List<string> GetPlayerNames()
         {
@@ -177,17 +238,26 @@ namespace WerewolfServer
         }
     }
 
-    public class Player
-    {
-        public TcpClient Client { get; }
-        public string Name { get; }
-        public Room CurrentRoom { get; set; }
-
-        public Player(TcpClient client, string name)
+     public class Player
         {
-            Client = client;
-            Name = name;
+            public TcpClient Client { get; }
+            public string Name { get; }
+            public Room CurrentRoom { get; set; }
+
+            public Player(TcpClient client, string name)
+            {
+                Client = client;
+                Name = name;
+            }
         }
-    }
+
+        public static void RemoveRoom(string roomId)
+        {
+            if (_rooms.ContainsKey(roomId))
+            {
+                _rooms.Remove(roomId);
+                Console.WriteLine($"[SERVER] Đã xóa phòng {roomId} vì không còn người chơi.");
+            }
+        }
     }
 }

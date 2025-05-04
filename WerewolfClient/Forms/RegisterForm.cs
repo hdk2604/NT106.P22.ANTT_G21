@@ -29,6 +29,7 @@ namespace WerewolfClient.Forms
             string email = txtEmail.Text.Trim();
             string password = txtPassword.Text;
             string confirmPassword = txtConfirmPassword.Text;
+            string username = txtUsername.Text.Trim();
 
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(confirmPassword))
             {
@@ -42,7 +43,7 @@ namespace WerewolfClient.Forms
                 return;
             }
 
-            bool isSuccess = await FirebaseAuthHelper.RegisterAsync(email, password);
+            bool isSuccess = await FirebaseAuthHelper.RegisterAsync(email, password, username);
             if (isSuccess)
             {
                 MessageBox.Show("Đăng ký thành công!");

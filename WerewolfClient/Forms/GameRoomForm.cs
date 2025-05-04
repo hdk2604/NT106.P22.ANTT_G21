@@ -9,6 +9,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 
 namespace WerewolfClient.Forms
 {
@@ -18,17 +19,187 @@ namespace WerewolfClient.Forms
         private string roomCode;
         private bool isHost;
         private List<string> players = new List<string>();
+        private TcpClient client;
+        private NetworkStream stream;
+        private Thread receiveThread;
+        private bool isConnected = false;
+        private SynchronizationContext uiContext;
 
-        public GameRoomForm(string playerName, string roomCode, bool isHost)
+        public GameRoomForm(string playerName, string roomCode, bool isHost, TcpClient existingClient = null)
         {
             InitializeComponent();
             this.playerName = playerName;
             this.roomCode = roomCode;
             this.isHost = isHost;
-            InitializePlayers();
+            lblRoomId.Text = $"Mã phòng: {roomCode}";
+            lblPlayerName.Text = playerName;
+            uiContext = SynchronizationContext.Current;
+            
+            try 
+            {
+                ConnectToServer(existingClient);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Không thể kết nối đến server: {ex.Message}", "Lỗi kết nối", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Close();
+                return;
+            }
         }
 
-       
+        private void ConnectToServer(TcpClient existingClient = null)
+        {
+            try
+            {
+                if (existingClient != null)
+                {
+                    client = existingClient;
+                    stream = client.GetStream();
+                    isConnected = true;
+                }
+                else
+                {
+                    client = new TcpClient("localhost", 8888);
+                    stream = client.GetStream();
+                    isConnected = true;
+                    SendMessage($"JOIN_ROOM:{roomCode}:{playerName}");
+                }
+
+                // Start receive thread
+                receiveThread = new Thread(ReceiveMessages);
+                receiveThread.IsBackground = true;
+                receiveThread.Start();
+
+                InitializePlayers();
+            }
+            catch (Exception ex)
+            {
+                isConnected = false;
+                if (client != null)
+                {
+                    try
+                    {
+                        client.Close();
+                    }
+                    catch { }
+                }
+                MessageBox.Show($"Không thể kết nối đến server: {ex.Message}", "Lỗi kết nối", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Close();
+            }
+        }
+
+        private void SendMessage(string message)
+        {
+            if (!isConnected || client == null || stream == null) return;
+
+            try
+            {
+                if (!client.Connected)
+                {
+                    isConnected = false;
+                    return;
+                }
+
+                byte[] data = Encoding.UTF8.GetBytes(message + "\n");
+                stream.Write(data, 0, data.Length);
+            }
+            catch (Exception ex)
+            {
+                isConnected = false;
+                if (!this.IsDisposed)
+                {
+                    Invoke((MethodInvoker)delegate
+                    {
+                        MessageBox.Show($"Lỗi khi gửi tin nhắn: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    });
+                }
+            }
+        }
+
+        private void ReceiveMessages()
+        {
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+
+            try
+            {
+                while (isConnected)
+                {
+                    bytesRead = stream.Read(buffer, 0, buffer.Length);
+                    if (bytesRead > 0)
+                    {
+                        string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                        var messages = message.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                        foreach (var msg in messages)
+                        {
+                            if (!string.IsNullOrWhiteSpace(msg))
+                            {
+                                string finalMsg = msg.Trim();
+                                uiContext.Post(_ => ProcessServerMessage(finalMsg), null);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                if (isConnected)
+                {
+                    uiContext.Post(_ => 
+                    {
+                        MessageBox.Show($"Lỗi kết nối: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        this.Close();
+                    }, null);
+                }
+            }
+        }
+
+        private void ProcessServerMessage(string message)
+        {
+            string[] parts = message.Split(':');
+            string command = parts[0];
+
+            switch (command)
+            {
+                case "PLAYER_JOINED":
+                    if (parts.Length >= 2)
+                    {
+                        string newPlayer = parts[1];
+                        OnPlayerJoined(newPlayer);
+                    }
+                    break;
+
+                case "PLAYER_LEFT":
+                    if (parts.Length >= 2)
+                    {
+                        string leftPlayer = parts[1];
+                        OnPlayerLeft(leftPlayer);
+                    }
+                    break;
+
+                case "PLAYER_LIST":
+                    if (parts.Length >= 2)
+                    {
+                        string[] playerList = parts[1].Split(',');
+                        players = playerList.ToList();
+                        UpdatePlayerList();
+                    }
+                    break;
+
+                case "CHAT_MESSAGE":
+                    if (parts.Length >= 3)
+                    {
+                        string sender = parts[1];
+                        string msg = string.Join(":", parts.Skip(2));
+                        OnChatMessageReceived(sender, msg);
+                    }
+                    break;
+
+                case "GAME_STARTED":
+                    OnGameStarted();
+                    break;
+            }
+        }
 
         private void InitializePlayers()
         {
@@ -59,28 +230,38 @@ namespace WerewolfClient.Forms
 
             if (!string.IsNullOrEmpty(message))
             {
-                AddChatMessage(playerName, message);
+                SendMessage($"CHAT_MESSAGE:{roomCode}:{playerName}:{message}");
                 txtMessage.Clear();
-
-                // Gửi tin nhắn tới server
-                // NetworkManager.SendChatMessage(roomCode, playerName, message);
             }
         }
 
         private void btnLeaveRoom_Click(object sender, EventArgs e)
         {
-            // Thông báo rời phòng
-            // NetworkManager.LeaveRoom(roomCode, playerName);
-
-            AddChatMessage("Hệ thống", $"Bạn đã rời khỏi phòng {roomCode}");
-
-            this.Hide();
-            new LobbyForm(playerName).Show();
+          isConnected = false;
+            if (client != null)
+            {
+                try
+                {
+                    SendMessage($"LEAVE_ROOM:{roomCode}:{playerName}");
+                    client.Close();
+                }
+                catch { }
+            }
+            if (receiveThread != null && receiveThread.IsAlive)
+            {
+                receiveThread.Join(500);
+            }
             this.Close();
         }
 
         private void btnStartGame_Click(object sender, EventArgs e)
-        {
+        {   
+             if (!isHost)
+            {
+                MessageBox.Show("Chỉ chủ phòng mới có thể bắt đầu game", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             if (players.Count < 4)
             {
                 MessageBox.Show("Cần ít nhất 4 người chơi để bắt đầu game",
@@ -91,7 +272,7 @@ namespace WerewolfClient.Forms
             // Gửi yêu cầu bắt đầu game tới server
             // NetworkManager.StartGame(roomCode, playerName);
 
-            AddChatMessage("Hệ thống", "Trò chơi đang bắt đầu...");
+             SendMessage($"START_GAME:{roomCode}");
 
             // Chuyển sang màn hình game chính
             // this.Hide();
@@ -109,9 +290,32 @@ namespace WerewolfClient.Forms
 
         private void GameRoomForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (e.CloseReason == CloseReason.UserClosing)
+            try
             {
-                btnLeaveRoom.PerformClick();
+                isConnected = false;
+                if (client != null)
+                {
+                    try
+                    {
+                        SendMessage($"LEAVE_ROOM:{roomCode}:{playerName}");
+                    }
+                    catch { }
+                    
+                    try
+                    {
+                        client.Close();
+                    }
+                    catch { }
+                }
+                
+                if (receiveThread != null && receiveThread.IsAlive)
+                {
+                    receiveThread.Join(1000);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error during form closing: {ex.Message}");
             }
         }
 

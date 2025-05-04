@@ -17,6 +17,7 @@ namespace WerewolfClient
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Forms.RegisterForm());
+
         }
     }
 }
