@@ -19,11 +19,69 @@ namespace WerewolfClient.Models
         public string Id { get; set; }
         public string UserId { get; set; }  // Liên kết với tài khoản
         public string Name { get; set; }
+        // Vai trò và thuộc tính liên quan
         public string Role { get; set; } = "villager";
+        public string Team { get; set; } // "villagers" hoặc "werewolves"
+        public bool IsRevealed { get; set; } = false; // Đã bị lộ vai trò chưa
         public bool IsAlive { get; set; } = true;
-        public string VotedFor { get; set; }
+        public bool IsHost { get; set; } = false; // Có phải chủ phòng không
         public bool IsConnected { get; set; }
         public bool IsReady { get; set; }
+        // Hành động ban đêm
+        public string VotedFor { get; set; } // Người chơi đã vote (dùng cho cả sói và vote treo cổ)
+        public string ProtectedPlayerId { get; set; } // Người được bảo vệ (bodyguard)
+        public string LastProtectedPlayerId { get; set; } // Người được bảo vệ đêm trước (bodyguard)
+        public bool HasUsedHealPotion { get; set; } = false; // Đã dùng thuốc cứu (witch)
+        public bool HasUsedKillPotion { get; set; } = false; // Đã dùng thuốc độc (witch)
+        public bool IsProtectedByWitch { get; set; } = false; // Được phù thủy cứu
+        public bool IsPoisonedByWitch { get; set; } = false; // Bị phù thủy đầu độc
+        public CheckResult CheckedPlayer { get; set; } // Kết quả kiểm tra (seer)
+        public bool CanShoot { get; set; } = false; // Có thể bắn khi chết (hunter)
+
+        // Trạng thái đặc biệt
+        public bool IsSilenced { get; set; } = false; // Bị câm (không thể nói)
+        public bool IsProtected { get; set; } = false; // Được bảo vệ khỏi sói
+        public DateTime LastActionTime { get; set; } // Thời gian hành động gần nhất
+
+        // Thống kê
+        public int VotesReceived { get; set; } = 0; // Số phiếu bầu nhận được
+        public int KillCount { get; set; } = 0; // Số lần giết người (sói/thợ săn)
+
+        public class CheckResult
+        {
+            public string PlayerId { get; set; }
+            public string Role { get; set; }
+            public bool IsWerewolf { get; set; }
+        }
+
+        public bool CanPerformNightAction(string currentPhase)
+        {
+            if (!IsAlive) return false;
+
+            if (currentPhase == "night")
+            {
+                if (Role == "werewolf" || Role == "seer" || Role == "witch" || Role == "bodyguard")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool CanVote(string currentPhase)
+        {
+            return IsAlive && currentPhase == "day";
+        }
+
+        public void ResetNightActions()
+        {
+            VotedFor = null;
+            ProtectedPlayerId = null;
+            IsProtectedByWitch = false;
+            IsPoisonedByWitch = false;
+            CheckedPlayer = null;
+        }
     }
 
     public class Game
