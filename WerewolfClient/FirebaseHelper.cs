@@ -252,4 +252,211 @@ public class FirebaseHelper
                 .PutAsync(null);
         }
     }
+
+    public async Task CheckGameEndCondition(string gameId)
+    {
+        var players = await GetPlayers(gameId);
+        var aliveWerewolves = players.Count(p => p.IsAlive && p.Role == "werewolf");
+        var aliveVillagers = players.Count(p => p.IsAlive && p.Role != "werewolf");
+
+        if (aliveWerewolves == 0)
+        {
+            await UpdateGameStatus(gameId, "villagers_win");
+        }
+        else if (aliveWerewolves >= aliveVillagers)
+        {
+            await UpdateGameStatus(gameId, "werewolves_win");
+        }
+    }
+
+    // === TIÊN TRI (SEER) ===
+    /// Hành động kiểm tra vai trò của người chơi khác (cho Tiên tri)
+    public async Task SeerCheckPlayer(string gameId, string seerId, string targetPlayerId)
+    {
+        var game = await GetGame(gameId);
+        if (game.CurrentPhase != "night")
+        {
+            throw new InvalidOperationException("Tiên tri chỉ có thể kiểm tra vào ban đêm");
+        }
+
+        var targetPlayer = (await GetPlayers(gameId)).FirstOrDefault(p => p.Id == targetPlayerId);
+        if (targetPlayer == null)
+        {
+            throw new ArgumentException("Người chơi không tồn tại");
+        }
+
+        // Lưu kết quả kiểm tra cho Tiên tri
+        await firebase
+            .Child("games")
+            .Child(gameId)
+            .Child("players")
+            .Child(seerId)
+            .Child("CheckedPlayer")
+            .PutAsync(new
+            {
+                PlayerId = targetPlayerId,
+                Role = targetPlayer.Role,
+                IsWerewolf = targetPlayer.Role == "werewolf"
+            });
+
+        await AddGameLog(gameId, $"Seer {seerId} has checked player {targetPlayerId}", "night");
+    }
+
+    // === PHÙ THỦY (WITCH) ===
+    /// Phù thủy sử dụng thuốc cứu
+    public async Task WitchUseHealPotion(string gameId, string witchId, string targetPlayerId)
+    {
+        var game = await GetGame(gameId);
+        if (game.CurrentPhase != "night")
+        {
+            throw new InvalidOperationException("Phù thủy chỉ có thể dùng thuốc vào ban đêm");
+        }
+
+        var witch = (await GetPlayers(gameId)).FirstOrDefault(p => p.Id == witchId);
+        if (witch == null || witch.Role != "witch")
+        {
+            throw new ArgumentException("Người chơi không phải là Phù thủy");
+        }
+
+        if (witch.HasUsedHealPotion)
+        {
+            throw new InvalidOperationException("Phù thủy đã dùng hết thuốc cứu");
+        }
+
+        await firebase
+            .Child("games")
+            .Child(gameId)
+            .Child("players")
+            .Child(witchId)
+            .Child("HasUsedHealPotion")
+            .PutAsync(true);
+
+        await firebase
+            .Child("games")
+            .Child(gameId)
+            .Child("players")
+            .Child(targetPlayerId)
+            .Child("IsProtectedByWitch")
+            .PutAsync(true);
+
+        await AddGameLog(gameId, $"Witch {witchId} has used heal potion on {targetPlayerId}", "night");
+    }
+
+    /// Phù thủy sử dụng thuốc độc
+    public async Task WitchUseKillPotion(string gameId, string witchId, string targetPlayerId)
+    {
+        var game = await GetGame(gameId);
+        if (game.CurrentPhase != "night")
+        {
+            throw new InvalidOperationException("Phù thủy chỉ có thể dùng thuốc vào ban đêm");
+        }
+
+        var witch = (await GetPlayers(gameId)).FirstOrDefault(p => p.Id == witchId);
+        if (witch == null || witch.Role != "witch")
+        {
+            throw new ArgumentException("Người chơi không phải là Phù thủy");
+        }
+
+        if (witch.HasUsedKillPotion)
+        {
+            throw new InvalidOperationException("Phù thủy đã dùng hết thuốc độc");
+        }
+
+        await firebase
+            .Child("games")
+            .Child(gameId)
+            .Child("players")
+            .Child(witchId)
+            .Child("HasUsedKillPotion")
+            .PutAsync(true);
+
+        await firebase
+            .Child("games")
+            .Child(gameId)
+            .Child("players")
+            .Child(targetPlayerId)
+            .Child("IsPoisonedByWitch")
+            .PutAsync(true);
+
+        await AddGameLog(gameId, $"Witch {witchId} has used kill potion on {targetPlayerId}", "night");
+    }
+
+    // === BẢO VỆ (BODYGUARD) ===
+    /// Bảo vệ chọn người để bảo vệ
+    public async Task BodyguardProtectPlayer(string gameId, string bodyguardId, string targetPlayerId)
+    {
+        var game = await GetGame(gameId);
+        if (game.CurrentPhase != "night")
+        {
+            throw new InvalidOperationException("Bảo vệ chỉ có thể bảo vệ vào ban đêm");
+        }
+
+        var bodyguard = (await GetPlayers(gameId)).FirstOrDefault(p => p.Id == bodyguardId);
+        if (bodyguard == null || bodyguard.Role != "bodyguard")
+        {
+            throw new ArgumentException("Người chơi không phải là Bảo vệ");
+        }
+
+        // Không thể bảo vệ cùng người 2 đêm liên tiếp
+        if (bodyguard.LastProtectedPlayerId == targetPlayerId)
+        {
+            throw new InvalidOperationException("Bảo vệ không thể bảo vệ cùng người 2 đêm liên tiếp");
+        }
+
+        await firebase
+            .Child("games")
+            .Child(gameId)
+            .Child("players")
+            .Child(bodyguardId)
+            .Child("ProtectedPlayerId")
+            .PutAsync(targetPlayerId);
+
+        await firebase
+            .Child("games")
+            .Child(gameId)
+            .Child("players")
+            .Child(bodyguardId)
+            .Child("LastProtectedPlayerId")
+            .PutAsync(targetPlayerId);
+
+        await AddGameLog(gameId, $"Bodyguard {bodyguardId} is protecting {targetPlayerId}", "night");
+    }
+
+    // === THỢ SĂN (HUNTER) ===
+    /// Thợ săn bắn ai đó khi chết (ban ngày)
+    public async Task HunterShootPlayer(string gameId, string hunterId, string targetPlayerId)
+    {
+        var game = await GetGame(gameId);
+        if (game.CurrentPhase != "day")
+        {
+            throw new InvalidOperationException("Thợ săn chỉ có thể bắn vào ban ngày khi bị treo cổ");
+        }
+
+        var hunter = (await GetPlayers(gameId)).FirstOrDefault(p => p.Id == hunterId);
+        if (hunter == null || hunter.Role != "hunter")
+        {
+            throw new ArgumentException("Người chơi không phải là Thợ săn");
+        }
+
+        if (hunter.IsAlive || !hunter.CanShoot)
+        {
+            throw new InvalidOperationException("Thợ săn chỉ có thể bắn khi bị giết");
+        }
+
+        var targetPlayer = (await GetPlayers(gameId)).FirstOrDefault(p => p.Id == targetPlayerId);
+        if (targetPlayer == null || !targetPlayer.IsAlive)
+        {
+            throw new ArgumentException("Mục tiêu không hợp lệ");
+        }
+
+        await firebase
+            .Child("games")
+            .Child(gameId)
+            .Child("players")
+            .Child(targetPlayerId)
+            .Child("IsAlive")
+            .PutAsync(false);
+
+        await AddGameLog(gameId, $"Hunter {hunterId} has shot {targetPlayerId} before dying!", "day");
+    }
 }

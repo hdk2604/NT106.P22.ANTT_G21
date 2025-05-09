@@ -57,5 +57,10 @@ namespace WerewolfClient.Forms
             this.Hide();
             new LoginForm().Show();
         }
+
+        private void lblLoginPrompt_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }
