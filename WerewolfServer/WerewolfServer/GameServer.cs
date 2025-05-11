@@ -146,6 +146,16 @@ namespace WerewolfServer
                             }
                         }
                         break;
+                    case "START_GAME":
+                        if (parts.Length >= 2)
+                        {
+                            string roomId = parts[1];
+                            if (_rooms.ContainsKey(roomId))
+                            {
+                                _rooms[roomId].Broadcast($"GAME_STARTED:{roomId}", "");
+                            }
+                        }
+                        break;
                 }
 
                 if (!string.IsNullOrEmpty(response))

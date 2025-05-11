@@ -93,8 +93,9 @@ namespace WerewolfClient.Models
         public int MaxPlayers { get; set; } = 8;
         public string CreatorId { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        public int CurrentPlayerCount { get; set; } // Thêm dòng này
+        public int CurrentPlayerCount { get; set; }
         public string RoomId { get; set; }
+        public string PhaseStartTime { get; set; }
     }
 
     public class GameLog

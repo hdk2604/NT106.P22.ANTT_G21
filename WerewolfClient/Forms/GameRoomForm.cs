@@ -10,6 +10,8 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using WerewolfClient;
+using WerewolfClient.Models;
 
 namespace WerewolfClient.Forms
 {
@@ -24,6 +26,8 @@ namespace WerewolfClient.Forms
         private Thread receiveThread;
         private bool isConnected = false;
         private SynchronizationContext uiContext;
+        private FirebaseHelper _firebaseHelper = new FirebaseHelper();
+        private bool leaveHandled = false;
 
         public GameRoomForm(string playerName, string roomCode, bool isHost, TcpClient existingClient = null)
         {
@@ -235,9 +239,9 @@ namespace WerewolfClient.Forms
             }
         }
 
-        private void btnLeaveRoom_Click(object sender, EventArgs e)
+        private async void btnLeaveRoom_Click(object sender, EventArgs e)
         {
-          isConnected = false;
+            isConnected = false;
             if (client != null)
             {
                 try
@@ -251,10 +255,12 @@ namespace WerewolfClient.Forms
             {
                 receiveThread.Join(500);
             }
+            // Firebase: Xử lý rời phòng
+            await LeaveGameOnFirebase();
             this.Close();
         }
 
-        private void btnStartGame_Click(object sender, EventArgs e)
+        private async void btnStartGame_Click(object sender, EventArgs e)
         {   
              if (!isHost)
             {
@@ -262,22 +268,64 @@ namespace WerewolfClient.Forms
                 return;
             }
 
-            if (players.Count < 4)
+            if (players.Count < 1)
             {
-                MessageBox.Show("Cần ít nhất 4 người chơi để bắt đầu game",
+                MessageBox.Show("Cần ít nhất 2 người chơi để bắt đầu game",
                     "Không thể bắt đầu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
+            // Phân role ngẫu nhiên và cập nhật Firebase
+            try
+            {
+                // 1. Tìm gameId từ roomCode
+                var games = await _firebaseHelper.firebase
+                    .Child("games")
+                    .OnceAsync<Game>();
+                var game = games.FirstOrDefault(g => g.Object.RoomId == roomCode);
+                if (game != null)
+                {
+                    string gameId = game.Key;
+                    // 2. Lấy danh sách player object từ Firebase
+                    var playerObjs = await _firebaseHelper.GetPlayers(gameId);
+                    var playerIds = playerObjs.Select(p => p.Id).ToList();
+                    int playerCount = playerIds.Count;
+
+                    // 3. Tạo danh sách role theo quy tắc
+                    List<string> roles = new List<string>();
+                    // Số sói
+                    int wolfCount = playerCount <= 5 ? 1 : (playerCount <= 7 ? 2 : 3);
+                    for (int i = 0; i < wolfCount; i++) roles.Add("werewolf");
+                    // Các role đặc biệt (chỉ 1 mỗi loại nếu còn slot)
+                    var specialRoles = new List<string> { "seer", "bodyguard", "hunter", "witch" };
+                    foreach (var r in specialRoles)
+                        if (roles.Count < playerCount) roles.Add(r);
+                    // Còn lại là dân làng
+                    while (roles.Count < playerCount) roles.Add("villager");
+                    // 4. Xáo trộn role
+                    var rnd = new Random();
+                    roles = roles.OrderBy(x => rnd.Next()).ToList();
+                    // 5. Gán role cho từng player và cập nhật Firebase
+                    for (int i = 0; i < playerCount; i++)
+                    {
+                        var playerId = playerIds[i];
+                        var role = roles[i];
+                        await _firebaseHelper.UpdatePlayerRole(gameId, playerId, role);
+                    }
+                    // 6. Reset phaseStartTime khi bắt đầu game
+                      await _firebaseHelper.firebase
+                      .Child($"games/{gameId}/phaseStartTime")
+                        .PutAsync($"\"{DateTime.UtcNow.ToString("o")}\"");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi phân vai trò: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             // Gửi yêu cầu bắt đầu game tới server
-            // NetworkManager.StartGame(roomCode, playerName);
-
-             SendMessage($"START_GAME:{roomCode}");
-
-            // Chuyển sang màn hình game chính
-            // this.Hide();
-            // new GamePlayForm(playerName, roomCode, players).Show();
-            // this.Close();
+            SendMessage($"START_GAME:{roomCode}");
         }
 
         private void txtMessage_KeyDown(object sender, KeyEventArgs e)
@@ -288,8 +336,17 @@ namespace WerewolfClient.Forms
             }
         }
 
-        private void GameRoomForm_FormClosing(object sender, FormClosingEventArgs e)
+        private async void GameRoomForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            // Chỉ cho phép đóng form sau khi đã rời phòng trên Firebase
+            if (!leaveHandled)
+            {
+                e.Cancel = true; // Ngăn đóng form tạm thời
+                await LeaveGameOnFirebase();
+                leaveHandled = true;
+                this.Close(); // Đóng lại form sau khi đã xử lý xong
+                return;
+            }
             try
             {
                 isConnected = false;
@@ -341,13 +398,47 @@ namespace WerewolfClient.Forms
 
         public void OnGameStarted()
         {
-            MessageBox.Show("Trò chơi bắt đầu!", "Werewolf",
-                MessageBoxButtons.OK, MessageBoxIcon.Information);
+            // Ẩn phòng chờ, hiện form chơi game
+            MessageBox.Show($"Hello");
+            this.Invoke((MethodInvoker)delegate {
+                this.Hide();
+                var inGameForm = new InGameForm(players, client);
+                inGameForm.CurrentUserName = CurrentUserManager.CurrentUser.Username;
+                // Lấy gameId từ roomCode
+                var games = _firebaseHelper.firebase
+                    .Child("games")
+                    .OnceAsync<Game>().Result;
+                var game = games.FirstOrDefault(g => g.Object.RoomId == roomCode);
+                if (game != null)
+                {
+                    // Xác định host dựa vào CreatorId
+                    bool isHost = (game.Object.CreatorId == CurrentUserManager.CurrentUser.Id);
+                    inGameForm.SetFirebaseInfo(CurrentUserManager.CurrentUser.Id, game.Key, isHost, roomCode);
+                }
+                inGameForm.FormClosed += (s, args) => this.Close();
+                inGameForm.Show();
+            });
+        }
 
-            // Chuyển sang màn hình game chính
-            // this.Hide();
-            // new GamePlayForm(playerName, roomCode, players).Show();
-            // this.Close();
+        private async Task LeaveGameOnFirebase()
+        {
+            try
+            {
+                // Tìm gameId từ roomCode
+                var games = await _firebaseHelper.firebase
+                    .Child("games")
+                    .OnceAsync<Game>();
+                var game = games.FirstOrDefault(g => g.Object.RoomId == roomCode);
+                if (game != null)
+                {
+                    await _firebaseHelper.LeaveGame(game.Key, CurrentUserManager.CurrentUser.Id);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Có thể log lỗi nếu cần
+                Console.WriteLine($"Firebase leave error: {ex.Message}");
+            }
         }
     }
 }

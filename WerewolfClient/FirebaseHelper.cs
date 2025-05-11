@@ -118,7 +118,8 @@ public class FirebaseHelper
             currentPhase = "night",
             roundNumber = 1,
             currentPlayerCount = 1, // Người tạo phòng là người chơi đầu tiên
-            roomId = serverRoomId // Thêm trường roomId là id từ server
+            roomId = serverRoomId, // Thêm trường roomId là id từ server'
+            phaseStartTime = DateTime.UtcNow.ToString("o")
         };
 
         var result = await firebase
@@ -147,8 +148,8 @@ public class FirebaseHelper
             .Child(gameId)
             .Child("players")
             .Child(playerId)
-            .Child("role")
-            .PutAsync(role);
+            .Child("Role")
+            .PutAsync<string>(role);
     }
 
     // Thêm log sự kiện game
@@ -215,57 +216,82 @@ public class FirebaseHelper
     // Trong FirebaseHelper.cs
     public async Task ProcessNightResults(string gameId)
     {
-        var players = await GetPlayers(gameId);
-        var werewolves = players.Where(p => p.Role == "werewolf" && p.IsAlive).ToList();
-        var alivePlayers = players.Where(p => p.IsAlive).ToList();
-
-        // Tính toán vote
-        var votes = werewolves
-            .Where(w => !string.IsNullOrEmpty(w.VotedFor))
-            .GroupBy(w => w.VotedFor)
-            .OrderByDescending(g => g.Count())
-            .FirstOrDefault();
-
-        if (votes != null)
+        try
         {
-            string targetId = votes.Key;
-            await firebase
-                .Child("games")
-                .Child(gameId)
-                .Child("players")
-                .Child(targetId)
-                .Child("IsAlive")
-                .PutAsync(false);
+            var players = await GetPlayers(gameId);
+            var werewolves = players.Where(p => p.Role == "werewolf" && p.IsAlive).ToList();
+            var alivePlayers = players.Where(p => p.IsAlive).ToList();
 
-            await AddGameLog(gameId, $"Player {targetId} was killed by werewolves!", "night");
+            // Tính toán vote
+            var votes = werewolves
+                .Where(w => !string.IsNullOrEmpty(w.VotedFor))
+                .GroupBy(w => w.VotedFor)
+                .OrderByDescending(g => g.Count())
+                .FirstOrDefault();
+
+            if (votes != null && votes.Any())
+            {
+                string targetId = votes.Key;
+                await firebase
+                    .Child("games")
+                    .Child(gameId)
+                    .Child("players")
+                    .Child(targetId)
+                    .Child("IsAlive")
+                    .PutAsync(false);
+
+                await AddGameLog(gameId, $"Player {targetId} was killed by werewolves!", "night");
+            }
+            else
+            {
+                await AddGameLog(gameId, "No one was killed tonight - werewolves didn't vote!", "night");
+            }
+
+            // Reset votes
+            foreach (var werewolf in werewolves)
+            {
+                await firebase
+                    .Child("games")
+                    .Child(gameId)
+                    .Child("players")
+                    .Child(werewolf.Id)
+                    .Child("VotedFor")
+                    .PutAsync(null);
+            }
+
+            // Kiểm tra điều kiện thắng sau khi xử lý kết quả đêm
+            await CheckGameEndCondition(gameId);
         }
-
-        // Reset votes
-        foreach (var werewolf in werewolves)
+        catch (Exception ex)
         {
-            await firebase
-                .Child("games")
-                .Child(gameId)
-                .Child("players")
-                .Child(werewolf.Id)
-                .Child("VotedFor")
-                .PutAsync(null);
+            throw new Exception($"Error in ProcessNightResults: {ex.Message}");
         }
     }
 
     public async Task CheckGameEndCondition(string gameId)
     {
-        var players = await GetPlayers(gameId);
-        var aliveWerewolves = players.Count(p => p.IsAlive && p.Role == "werewolf");
-        var aliveVillagers = players.Count(p => p.IsAlive && p.Role != "werewolf");
+        try
+        {
+            var players = await GetPlayers(gameId);
+            var aliveWerewolves = players.Count(p => p.IsAlive && p.Role == "werewolf");
+            var aliveVillagers = players.Count(p => p.IsAlive && p.Role != "werewolf");
 
-        if (aliveWerewolves == 0)
-        {
-            await UpdateGameStatus(gameId, "villagers_win");
+            if (aliveWerewolves == 0)
+            {
+                await firebase
+                    .Child($"games/{gameId}/status")
+                    .PutAsync($"\"villagers_win\"");
+            }
+            else if (aliveWerewolves >= aliveVillagers)
+            {
+                await firebase
+                    .Child($"games/{gameId}/status")
+                    .PutAsync($"\"werewolves_win\"");
+            }
         }
-        else if (aliveWerewolves >= aliveVillagers)
+        catch (Exception ex)
         {
-            await UpdateGameStatus(gameId, "werewolves_win");
+            throw new Exception($"Error in CheckGameEndCondition: {ex.Message}");
         }
     }
 
@@ -458,5 +484,94 @@ public class FirebaseHelper
             .PutAsync(false);
 
         await AddGameLog(gameId, $"Hunter {hunterId} has shot {targetPlayerId} before dying!", "day");
+    }
+
+    public async Task JoinGame(string gameId, Player player)
+    {
+        // 1. Thêm người chơi vào danh sách players
+        await firebase
+            .Child("games")
+            .Child(gameId)
+            .Child("players")
+            .Child(player.Id)
+            .PutAsync(player);
+
+        // 2. Tăng currentPlayerCount
+        var game = await GetGame(gameId);
+        await firebase
+            .Child("games")
+            .Child(gameId)
+            .Child("currentPlayerCount")
+            .PutAsync(game.CurrentPlayerCount + 1);
+    }
+
+    public async Task LeaveGame(string gameId, string playerId)
+    {
+        // Xóa player khỏi danh sách
+        await firebase
+            .Child("games")
+            .Child(gameId)
+            .Child("players")
+            .Child(playerId)
+            .DeleteAsync();
+
+        // Giảm currentPlayerCount
+        var game = await GetGame(gameId);
+        int newCount = Math.Max(0, game.CurrentPlayerCount - 1);
+        await firebase
+            .Child("games")
+            .Child(gameId)
+            .Child("currentPlayerCount")
+            .PutAsync(newCount);
+    }
+
+    public async Task<string> NextPhase(string gameId, string currentPhase)
+    {
+        try
+        {
+            string nextPhase = "night";
+            switch (currentPhase)
+            {
+                case "night":
+                    nextPhase = "day_discussion";
+                    break;
+                case "day_discussion":
+                    nextPhase = "day_vote";
+                    break;
+                case "day_vote":
+                    nextPhase = "night";
+                    break;
+                default:
+                    nextPhase = "night";
+                    break;
+            }
+
+            // Update phase trước
+            await firebase
+                .Child($"games/{gameId}/currentPhase")
+                .PutAsync($"\"{nextPhase}\"");  // Gửi dưới dạng JSON string
+            
+            // Sau đó update time
+            var newStartTime = DateTime.UtcNow.ToString("o");
+            await firebase
+                .Child($"games/{gameId}/phaseStartTime")
+                .PutAsync($"\"{newStartTime}\"");  // Gửi dưới dạng JSON string
+
+            // Kiểm tra điều kiện thắng sau mỗi lần chuyển phase
+            await CheckGameEndCondition(gameId);
+
+            // Kiểm tra status game trực tiếp
+            var game = await GetGame(gameId);
+            if (!string.IsNullOrEmpty(game.Status))
+            {
+                return game.Status;
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error in NextPhase: {ex.Message}");
+        }
     }
 }
