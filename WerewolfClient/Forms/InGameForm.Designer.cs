@@ -47,6 +47,7 @@ namespace WerewolfClient.Forms
             this.buttonHelp = new System.Windows.Forms.Button();
             this.buttonExit = new System.Windows.Forms.Button();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.labelTimer = new System.Windows.Forms.Label();
             this.panelLeft.SuspendLayout();
             this.panelRole.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureWitch)).BeginInit();
@@ -182,6 +183,7 @@ namespace WerewolfClient.Forms
             // panelTopLeft
             // 
             this.panelTopLeft.BackColor = System.Drawing.Color.White;
+            this.panelTopLeft.Controls.Add(this.labelTimer);
             this.panelTopLeft.Controls.Add(this.buttonHelp);
             this.panelTopLeft.Controls.Add(this.buttonExit);
             this.panelTopLeft.Location = new System.Drawing.Point(3, 3);
@@ -229,7 +231,16 @@ namespace WerewolfClient.Forms
             this.tableLayoutPanel1.TabIndex = 1;
             this.tableLayoutPanel1.Paint += new System.Windows.Forms.PaintEventHandler(this.tableLayoutPanel1_Paint);
             // 
-            // Form1
+            // labelTimer
+            // 
+            this.labelTimer.AutoSize = true;
+            this.labelTimer.Location = new System.Drawing.Point(220, 17);
+            this.labelTimer.Name = "labelTimer";
+            this.labelTimer.Size = new System.Drawing.Size(44, 16);
+            this.labelTimer.TabIndex = 2;
+            this.labelTimer.Text = "label1";
+            // 
+            // InGameForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -239,9 +250,8 @@ namespace WerewolfClient.Forms
             this.Controls.Add(this.tableLayoutPanel1);
             this.Controls.Add(this.panelLeft);
             this.ForeColor = System.Drawing.SystemColors.ControlLight;
-            this.Name = "Form1";
+            this.Name = "InGameForm";
             this.Text = "Ma Sói - Wolvesville Style UI";
-            this.Load += new System.EventHandler(this.Form1_Load);
             this.panelLeft.ResumeLayout(false);
             this.panelRole.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.pictureWitch)).EndInit();
@@ -250,6 +260,7 @@ namespace WerewolfClient.Forms
             ((System.ComponentModel.ISupportInitialize)(this.pictureVillager)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pictureWerewolf)).EndInit();
             this.panelTopLeft.ResumeLayout(false);
+            this.panelTopLeft.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -270,6 +281,7 @@ namespace WerewolfClient.Forms
         private RichTextBox richTextBox2;
         private System.Windows.Forms.Button button1;
         private TableLayoutPanel tableLayoutPanel1;
+        private Label labelTimer;
     }
 }
 

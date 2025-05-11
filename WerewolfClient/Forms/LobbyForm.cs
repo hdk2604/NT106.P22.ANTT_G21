@@ -92,7 +92,7 @@ namespace WerewolfClient.Forms
             }
         }
 
-        private void btnFindRoom_Click(object sender, EventArgs e)
+        private async void btnFindRoom_Click(object sender, EventArgs e)
         {
             using (Form inputForm = new Form())
             {
@@ -139,11 +139,48 @@ namespace WerewolfClient.Forms
                             string firstLine = response.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
                             if (firstLine == "JOIN_SUCCESS")
                             {
-                                // Mở GameRoomForm với kết nối này
-                                this.Hide();
-                                GameRoomForm gameRoomForm = new GameRoomForm(CurrentUserManager.CurrentUser.Username, roomId, false, client);
-                                gameRoomForm.FormClosed += (s, args) => this.Show();
-                                gameRoomForm.Show();
+                                try
+                                {
+                                    // 1. Tìm gameId từ roomId (lọc ở client)
+                                    var games = await _firebaseHelper.firebase
+                                        .Child("games")
+                                        .OnceAsync<Game>();
+                                    
+                                    var game = games.FirstOrDefault(g => g.Object.RoomId == roomId);
+                                    if (game != null)
+                                    {
+                                        // 2. Tạo player object
+                                        var player = new Player
+                                        {
+                                            Id = CurrentUserManager.CurrentUser.Id,
+                                            UserId = CurrentUserManager.CurrentUser.Id,
+                                            Name = CurrentUserManager.CurrentUser.Username,
+                                            Role = "villager",
+                                            IsAlive = true,
+                                            IsConnected = true,
+                                            IsReady = true
+                                        };
+
+                                        // 3. Join game
+                                        await _firebaseHelper.JoinGame(game.Key, player);
+
+                                        // 4. Mở GameRoomForm
+                                        this.Hide();
+                                        GameRoomForm gameRoomForm = new GameRoomForm(CurrentUserManager.CurrentUser.Username, roomId, false, client);
+                                        gameRoomForm.FormClosed += (s, args) => this.Show();
+                                        gameRoomForm.Show();
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show("Không tìm thấy phòng game với ID này!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                        client.Close();
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show($"Lỗi khi tham gia phòng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    client.Close();
+                                }
                             }
                             else
                             {

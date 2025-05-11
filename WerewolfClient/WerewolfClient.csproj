@@ -199,6 +199,9 @@
   <ItemGroup>
     <None Include="Resources\PanelTexture.jpg" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\shroudhost_by_fernanda2043_dg6xjxm-pre.jpg" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>cmd /c tasklist /FI "IMAGENAME eq WerewolfClient.exe" | find /I "WerewolfClient.exe" &gt;nul &amp;&amp; taskkill /F /IM WerewolfClient.exe &gt;nul || exit /B 0</PreBuildEvent>
