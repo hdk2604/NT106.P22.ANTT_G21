@@ -136,9 +136,6 @@
   <data name="villagerIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\villagerIcon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="WereWolfIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\WereWolfIcon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="WitchIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\WitchIcon.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
@@ -156,5 +153,8 @@
   </data>
   <data name="Day" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\shroudhost_by_fernanda2043_dg6xjxm-pre.jpg;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="WereWolfIcon" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\WereWolfIcon-removebg-preview.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

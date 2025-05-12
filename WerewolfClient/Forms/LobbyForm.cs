@@ -24,6 +24,7 @@ namespace WerewolfClient.Forms
             InitializeComponent();
             this._email = email; // Updated to use the renamed private field  
             _firebaseHelper = new FirebaseHelper();
+            playerName.Text = CurrentUserManager.CurrentUser.Username; 
         }
 
         private void btnRoles_Click(object sender, EventArgs e)

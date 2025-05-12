@@ -1,33 +1,10 @@
 ﻿using System.Drawing;
+using System.Windows.Forms;
 
 namespace WerewolfClient.Forms
 {
     partial class LobbyForm
     {
-        /// <summary>
-        /// Required designer variable.
-        /// </summary>
-        private System.ComponentModel.IContainer components = null;
-
-        /// <summary>
-        /// Clean up any resources being used.
-        /// </summary>
-        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing && (components != null))
-            {
-                components.Dispose();
-            }
-            base.Dispose(disposing);
-        }
-
-        #region Windows Form Designer generated code
-
-        /// <summary>
-        /// Required method for Designer support - do not modify
-        /// the contents of this method with the code editor.
-        /// </summary>
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LobbyForm));
@@ -41,47 +18,48 @@ namespace WerewolfClient.Forms
             this.playerInfo = new System.Windows.Forms.Label();
             this.btnFriends = new System.Windows.Forms.Button();
             this.playerName = new System.Windows.Forms.Label();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.lblVersion = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            this.panel2.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnCreateRoom
             // 
-            this.btnCreateRoom.BackColor = System.Drawing.Color.Transparent;
+            this.btnCreateRoom.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnCreateRoom.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnCreateRoom.FlatAppearance.BorderColor = System.Drawing.Color.LightCoral;
-            this.btnCreateRoom.FlatAppearance.BorderSize = 2;
-            this.btnCreateRoom.FlatAppearance.MouseDownBackColor = System.Drawing.Color.LightGray;
-            this.btnCreateRoom.FlatAppearance.MouseOverBackColor = System.Drawing.Color.LightGray;
+            this.btnCreateRoom.FlatAppearance.BorderColor = System.Drawing.Color.DarkRed;
+            this.btnCreateRoom.FlatAppearance.BorderSize = 3;
+            this.btnCreateRoom.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btnCreateRoom.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnCreateRoom.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCreateRoom.Font = new System.Drawing.Font("Georgia", 27.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnCreateRoom.ForeColor = System.Drawing.Color.DarkRed;
-            this.btnCreateRoom.Location = new System.Drawing.Point(1170, 306);
-            this.btnCreateRoom.Margin = new System.Windows.Forms.Padding(2);
+            this.btnCreateRoom.Font = new System.Drawing.Font("Georgia", 20F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnCreateRoom.ForeColor = System.Drawing.Color.WhiteSmoke;
+            this.btnCreateRoom.Location = new System.Drawing.Point(1113, 300);
             this.btnCreateRoom.Name = "btnCreateRoom";
-            this.btnCreateRoom.Size = new System.Drawing.Size(280, 61);
+            this.btnCreateRoom.Size = new System.Drawing.Size(375, 92);
             this.btnCreateRoom.TabIndex = 0;
-            this.btnCreateRoom.Text = "TẠO PHÒNG";
+            this.btnCreateRoom.Text = "CREATE ROOM";
             this.btnCreateRoom.UseVisualStyleBackColor = false;
             this.btnCreateRoom.Click += new System.EventHandler(this.btnCreateRoom_Click);
             // 
             // btnFindRoom
             // 
-            this.btnFindRoom.BackColor = System.Drawing.Color.Transparent;
+            this.btnFindRoom.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnFindRoom.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnFindRoom.FlatAppearance.BorderColor = System.Drawing.Color.LightCoral;
-            this.btnFindRoom.FlatAppearance.BorderSize = 2;
-            this.btnFindRoom.FlatAppearance.MouseDownBackColor = System.Drawing.Color.LightGray;
-            this.btnFindRoom.FlatAppearance.MouseOverBackColor = System.Drawing.Color.LightGray;
+            this.btnFindRoom.FlatAppearance.BorderColor = System.Drawing.Color.DarkRed;
+            this.btnFindRoom.FlatAppearance.BorderSize = 3;
+            this.btnFindRoom.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btnFindRoom.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnFindRoom.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnFindRoom.Font = new System.Drawing.Font("Georgia", 27.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnFindRoom.ForeColor = System.Drawing.Color.DarkRed;
-            this.btnFindRoom.Location = new System.Drawing.Point(1170, 405);
-            this.btnFindRoom.Margin = new System.Windows.Forms.Padding(2);
+            this.btnFindRoom.Font = new System.Drawing.Font("Georgia", 20F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnFindRoom.ForeColor = System.Drawing.Color.WhiteSmoke;
+            this.btnFindRoom.Location = new System.Drawing.Point(1113, 423);
             this.btnFindRoom.Name = "btnFindRoom";
-            this.btnFindRoom.Size = new System.Drawing.Size(280, 61);
+            this.btnFindRoom.Size = new System.Drawing.Size(375, 92);
             this.btnFindRoom.TabIndex = 0;
-            this.btnFindRoom.Text = "TÌM PHÒNG";
+            this.btnFindRoom.Text = "FIND ROOM";
             this.btnFindRoom.UseVisualStyleBackColor = false;
             this.btnFindRoom.Click += new System.EventHandler(this.btnFindRoom_Click);
             // 
@@ -89,48 +67,47 @@ namespace WerewolfClient.Forms
             // 
             this.gameName.AutoSize = true;
             this.gameName.BackColor = System.Drawing.Color.Transparent;
-            this.gameName.Font = new System.Drawing.Font("Palatino Linotype", 42F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.gameName.ForeColor = System.Drawing.Color.Maroon;
-            this.gameName.Location = new System.Drawing.Point(1113, 182);
+            this.gameName.Font = new System.Drawing.Font("Palatino Linotype", 48F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.gameName.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.gameName.Location = new System.Drawing.Point(983, 147);
+            this.gameName.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.gameName.Name = "gameName";
-            this.gameName.Size = new System.Drawing.Size(342, 76);
+            this.gameName.Size = new System.Drawing.Size(624, 129);
             this.gameName.TabIndex = 1;
-            this.gameName.Text = "Werewolves";
+            this.gameName.Text = "WEREWOLF";
             // 
             // btnSetting
             // 
-            this.btnSetting.BackColor = System.Drawing.Color.Transparent;
+            this.btnSetting.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnSetting.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnSetting.FlatAppearance.BorderColor = System.Drawing.Color.LightCoral;
-            this.btnSetting.FlatAppearance.BorderSize = 2;
-            this.btnSetting.FlatAppearance.MouseDownBackColor = System.Drawing.Color.LightGray;
-            this.btnSetting.FlatAppearance.MouseOverBackColor = System.Drawing.Color.LightGray;
+            this.btnSetting.FlatAppearance.BorderColor = System.Drawing.Color.DarkRed;
+            this.btnSetting.FlatAppearance.BorderSize = 3;
+            this.btnSetting.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btnSetting.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnSetting.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnSetting.Font = new System.Drawing.Font("Georgia", 27.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnSetting.ForeColor = System.Drawing.Color.DarkRed;
-            this.btnSetting.Location = new System.Drawing.Point(1170, 603);
-            this.btnSetting.Margin = new System.Windows.Forms.Padding(2);
+            this.btnSetting.Font = new System.Drawing.Font("Georgia", 20F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnSetting.ForeColor = System.Drawing.Color.WhiteSmoke;
+            this.btnSetting.Location = new System.Drawing.Point(1113, 669);
             this.btnSetting.Name = "btnSetting";
-            this.btnSetting.Size = new System.Drawing.Size(280, 61);
+            this.btnSetting.Size = new System.Drawing.Size(375, 92);
             this.btnSetting.TabIndex = 2;
-            this.btnSetting.Text = "SETTING";
+            this.btnSetting.Text = "SETTINGS";
             this.btnSetting.UseVisualStyleBackColor = false;
             // 
             // btnRoles
             // 
-            this.btnRoles.BackColor = System.Drawing.Color.Transparent;
+            this.btnRoles.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnRoles.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnRoles.FlatAppearance.BorderColor = System.Drawing.Color.LightCoral;
-            this.btnRoles.FlatAppearance.BorderSize = 2;
-            this.btnRoles.FlatAppearance.MouseDownBackColor = System.Drawing.Color.LightGray;
-            this.btnRoles.FlatAppearance.MouseOverBackColor = System.Drawing.Color.LightGray;
+            this.btnRoles.FlatAppearance.BorderColor = System.Drawing.Color.DarkRed;
+            this.btnRoles.FlatAppearance.BorderSize = 3;
+            this.btnRoles.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(120)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btnRoles.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnRoles.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnRoles.Font = new System.Drawing.Font("Georgia", 27.75F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnRoles.ForeColor = System.Drawing.Color.DarkRed;
-            this.btnRoles.Location = new System.Drawing.Point(1170, 504);
-            this.btnRoles.Margin = new System.Windows.Forms.Padding(2);
+            this.btnRoles.Font = new System.Drawing.Font("Georgia", 20F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnRoles.ForeColor = System.Drawing.Color.WhiteSmoke;
+            this.btnRoles.Location = new System.Drawing.Point(1113, 546);
             this.btnRoles.Name = "btnRoles";
-            this.btnRoles.Size = new System.Drawing.Size(280, 61);
+            this.btnRoles.Size = new System.Drawing.Size(375, 92);
             this.btnRoles.TabIndex = 3;
             this.btnRoles.Text = "ROLES";
             this.btnRoles.UseVisualStyleBackColor = false;
@@ -138,43 +115,54 @@ namespace WerewolfClient.Forms
             // 
             // panel1
             // 
-            this.panel1.BackColor = System.Drawing.SystemColors.ControlDarkDark;
+            this.panel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
             this.panel1.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.panel1.Controls.Add(this.pictureBox1);
             this.panel1.Controls.Add(this.playerInfo);
             this.panel1.Controls.Add(this.btnFriends);
             this.panel1.Controls.Add(this.playerName);
-            this.panel1.Location = new System.Drawing.Point(0, 0);
+            this.panel1.Location = new System.Drawing.Point(30, 31);
+            this.panel1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(324, 164);
+            this.panel1.Size = new System.Drawing.Size(449, 245);
             this.panel1.TabIndex = 4;
             // 
             // pictureBox1
             // 
             this.pictureBox1.Image = global::WerewolfClient.Properties.Resources._1329565;
-            this.pictureBox1.Location = new System.Drawing.Point(156, 34);
+            this.pictureBox1.Location = new System.Drawing.Point(251, 46);
+            this.pictureBox1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(143, 110);
+            this.pictureBox1.Size = new System.Drawing.Size(180, 185);
+            this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox1.TabIndex = 3;
             this.pictureBox1.TabStop = false;
             // 
             // playerInfo
             // 
             this.playerInfo.AutoSize = true;
-            this.playerInfo.Font = new System.Drawing.Font("Georgia", 14.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.playerInfo.Location = new System.Drawing.Point(68, 8);
+            this.playerInfo.Font = new System.Drawing.Font("Georgia", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.playerInfo.ForeColor = System.Drawing.Color.WhiteSmoke;
+            this.playerInfo.Location = new System.Drawing.Point(22, 15);
+            this.playerInfo.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.playerInfo.Name = "playerInfo";
-            this.playerInfo.Size = new System.Drawing.Size(198, 23);
+            this.playerInfo.Size = new System.Drawing.Size(293, 32);
             this.playerInfo.TabIndex = 2;
             this.playerInfo.Text = "Player Information";
             // 
             // btnFriends
             // 
-            this.btnFriends.BackColor = System.Drawing.SystemColors.ButtonShadow;
+            this.btnFriends.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(70)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btnFriends.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btnFriends.FlatAppearance.BorderColor = System.Drawing.Color.DarkRed;
+            this.btnFriends.FlatAppearance.BorderSize = 2;
+            this.btnFriends.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnFriends.Font = new System.Drawing.Font("Georgia", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnFriends.Location = new System.Drawing.Point(14, 74);
+            this.btnFriends.ForeColor = System.Drawing.Color.WhiteSmoke;
+            this.btnFriends.Location = new System.Drawing.Point(22, 154);
+            this.btnFriends.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnFriends.Name = "btnFriends";
-            this.btnFriends.Size = new System.Drawing.Size(75, 23);
+            this.btnFriends.Size = new System.Drawing.Size(150, 54);
             this.btnFriends.TabIndex = 1;
             this.btnFriends.Text = "Friends";
             this.btnFriends.UseVisualStyleBackColor = false;
@@ -182,39 +170,68 @@ namespace WerewolfClient.Forms
             // playerName
             // 
             this.playerName.AutoSize = true;
-            this.playerName.Font = new System.Drawing.Font("Georgia", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.playerName.Location = new System.Drawing.Point(11, 40);
+            this.playerName.Font = new System.Drawing.Font("Georgia", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.playerName.ForeColor = System.Drawing.Color.WhiteSmoke;
+            this.playerName.Location = new System.Drawing.Point(22, 77);
+            this.playerName.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.playerName.Name = "playerName";
-            this.playerName.Size = new System.Drawing.Size(100, 18);
+            this.playerName.Size = new System.Drawing.Size(173, 32);
             this.playerName.TabIndex = 0;
             this.playerName.Text = "Player Name";
             // 
+            // panel2
+            // 
+            this.panel2.BackColor = System.Drawing.Color.Transparent;
+            this.panel2.Controls.Add(this.lblVersion);
+            this.panel2.Location = new System.Drawing.Point(30, 923);
+            this.panel2.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(300, 62);
+            this.panel2.TabIndex = 5;
+            // 
+            // lblVersion
+            // 
+            this.lblVersion.AutoSize = true;
+            this.lblVersion.Font = new System.Drawing.Font("Georgia", 10F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblVersion.ForeColor = System.Drawing.Color.WhiteSmoke;
+            this.lblVersion.Location = new System.Drawing.Point(15, 15);
+            this.lblVersion.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblVersion.Name = "lblVersion";
+            this.lblVersion.Size = new System.Drawing.Size(144, 24);
+            this.lblVersion.TabIndex = 0;
+            this.lblVersion.Text = "Version 1.0.0.0";
+            // 
             // LobbyForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
             this.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("$this.BackgroundImage")));
-            this.ClientSize = new System.Drawing.Size(1520, 941);
+            this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.ClientSize = new System.Drawing.Size(1620, 1000);
+            this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.btnRoles);
             this.Controls.Add(this.btnSetting);
             this.Controls.Add(this.gameName);
             this.Controls.Add(this.btnFindRoom);
             this.Controls.Add(this.btnCreateRoom);
+            this.DoubleBuffered = true;
             this.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.Margin = new System.Windows.Forms.Padding(2);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
             this.Name = "LobbyForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "LobbyForm";
+            this.Text = "Werewolf - Lobby";
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            this.panel2.ResumeLayout(false);
+            this.panel2.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
         }
-
-        #endregion
 
         private System.Windows.Forms.Button btnCreateRoom;
         private System.Windows.Forms.Button btnFindRoom;
@@ -226,5 +243,7 @@ namespace WerewolfClient.Forms
         private System.Windows.Forms.Label playerInfo;
         private System.Windows.Forms.Button btnFriends;
         private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.Panel panel2;
+        private System.Windows.Forms.Label lblVersion;
     }
 }
