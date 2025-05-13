@@ -123,6 +123,7 @@ namespace WerewolfClient.Forms
         private void ReceiveMessages()
         {
             byte[] buffer = new byte[4096];
+            StringBuilder messageBuilder = new StringBuilder();
             int bytesRead;
 
             try
@@ -132,16 +133,24 @@ namespace WerewolfClient.Forms
                     bytesRead = stream.Read(buffer, 0, buffer.Length);
                     if (bytesRead > 0)
                     {
-                        string message = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                        var messages = message.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (var msg in messages)
+                        messageBuilder.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+                        string content = messageBuilder.ToString();
+                        int index;
+
+                        while ((index = content.IndexOf('\n')) >= 0)
                         {
-                            if (!string.IsNullOrWhiteSpace(msg))
+                            string line = content.Substring(0, index).Trim();
+                            content = content.Substring(index + 1);
+
+                            if (!string.IsNullOrEmpty(line))
                             {
-                                string finalMsg = msg.Trim();
-                                uiContext.Post(_ => ProcessServerMessage(finalMsg), null);
+                                uiContext.Post(_ => ProcessServerMessage(line), null);
                             }
                         }
+
+                        // Keep the remaining partial message
+                        messageBuilder.Clear();
+                        messageBuilder.Append(content);
                     }
                 }
             }

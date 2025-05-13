@@ -226,109 +226,122 @@ namespace WerewolfClient.Forms
             }
         }
 
-            private void ReceiveMessages()
-            {
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-
-                try
-                {
-                    while (isConnected)
-                    {
-                        bytesRead = stream.Read(buffer, 0, buffer.Length);
-                         if (bytesRead > 0)
-            {
-                receiveBuffer.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
-
-                string content = receiveBuffer.ToString();
-                int index;
-
-                while ((index = content.IndexOf('\n')) >= 0)
-                {
-                    string line = content.Substring(0, index).Trim();
-                    content = content.Substring(index + 1);
-
-                    if (!string.IsNullOrEmpty(line))
-                        uiContext.Post(_ => ProcessServerMessage(line), null);
-                }
-
-                // Giữ lại phần chưa đầy đủ
-                receiveBuffer.Clear();
-                receiveBuffer.Append(content);
-            }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    if (isConnected)
-                    {
-                        uiContext.Post(_ =>
-                        {
-                            MessageBox.Show($"Lỗi kết nối: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            this.Close();
-                        }, null);
-                    }
-                }
-            }
-        public void OnChatMessageReceived(string sender, string message)
+        private void ReceiveMessages()
         {
-            AddChatMessage(sender, message);
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            StringBuilder messageBuffer = new StringBuilder();
+
+            try
+            {
+                while (isConnected)
+                {
+                    bytesRead = stream.Read(buffer, 0, buffer.Length);
+                    if (bytesRead > 0)
+                    {
+                        messageBuffer.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+                        string content = messageBuffer.ToString();
+                        
+                        // Xử lý tất cả tin nhắn hoàn chỉnh trong buffer
+                        int lastNewLine = content.LastIndexOf('\n');
+                        if (lastNewLine >= 0)
+                        {
+                            string[] messages = content.Substring(0, lastNewLine + 1).Split('\n');
+                            foreach (string message in messages)
+                            {
+                                if (!string.IsNullOrEmpty(message.Trim()))
+                                {
+                                    string trimmedMessage = message.Trim();
+                                    uiContext.Post(_ => ProcessServerMessage(trimmedMessage), null);
+                                }
+                            }
+                            // Giữ lại phần chưa hoàn chỉnh
+                            messageBuffer.Clear();
+                            messageBuffer.Append(content.Substring(lastNewLine + 1));
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                if (isConnected)
+                {
+                    uiContext.Post(_ =>
+                    {
+                        MessageBox.Show($"Lỗi kết nối: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        this.Close();
+                    }, null);
+                }
+            }
         }
+
         private void ProcessServerMessage(string message)
         {
-            string[] parts = message.Split(':');
-            string command = parts[0];
-
-            switch (command)
+            try
             {
-                case "CHAT_MESSAGE":
-                    if (parts.Length >= 3)
-                    {
-                        string sender = parts[1];
-                        string msg = string.Join(":", parts.Skip(2));
-                        OnChatMessageReceived(sender, msg);
-                    }
-                    break;
-                case "PLAYER_JOINED":
-                    if (parts.Length >= 2)
-                    {
-                        string newPlayer = parts[1];
-                        OnPlayerJoined(newPlayer);
-                    }
-                    break;
-                case "PLAYER_LEFT":
-                    if (parts.Length >= 2)
-                    {
-                        string leftPlayer = parts[1];
-                        OnPlayerLeft(leftPlayer);
-                    }
-                    break;
-                case "PLAYER_LIST":
-                    if (parts.Length >= 2)
-                    {
-                        string[] playerList = parts[1].Split(',');
-                        players = playerList.ToList();
-                        UpdatePlayerList();
-                    }
-                    break;
+                string[] parts = message.Split(':');
+                if (parts.Length < 2) return;
+
+                string command = parts[0];
+                switch (command)
+                {
+                    case "CHAT_MESSAGE":
+                        if (parts.Length >= 3)
+                        {
+                            string sender = parts[1];
+                            string msg = string.Join(":", parts.Skip(2));
+                            AddChatMessage(sender, msg);
+                        }
+                        break;
+                    case "PLAYER_JOINED":
+                        if (parts.Length >= 2)
+                        {
+                            string newPlayer = parts[1];
+                            OnPlayerJoined(newPlayer);
+                        }
+                        break;
+                    case "PLAYER_LEFT":
+                        if (parts.Length >= 2)
+                        {
+                            string leftPlayer = parts[1];
+                            OnPlayerLeft(leftPlayer);
+                        }
+                        break;
+                    case "PLAYER_LIST":
+                        if (parts.Length >= 2)
+                        {
+                            string[] playerList = parts[1].Split(',');
+                            players = playerList.ToList();
+                            UpdatePlayerList();
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                richTextBox1.AppendText($"Error processing message: {ex.Message}\n");
             }
         }
 
         private void AddChatMessage(string sender, string message)
         {
-             string formattedMessage = $"[{DateTime.Now:HH:mm}] {sender}: {message}";
+            try
+            {
+                if (richTextBox1.InvokeRequired)
+                {
+                    richTextBox1.Invoke(new Action(() => AddChatMessage(sender, message)));
+                    return;
+                }
 
-    if (richTextBox1.InvokeRequired)
-    {
-        richTextBox1.Invoke((MethodInvoker)(() =>
-        {
-            richTextBox1.AppendText(formattedMessage + Environment.NewLine);
-        }));
-    }
-    else
-    {
-        richTextBox1.AppendText(formattedMessage + Environment.NewLine);
-    }
+                string formattedMessage = $"[{DateTime.Now:HH:mm}] {sender}: {message}";
+                richTextBox1.AppendText(formattedMessage + Environment.NewLine);
+                richTextBox1.ScrollToCaret();
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't show to user to avoid spam
+                System.Diagnostics.Debug.WriteLine($"Error adding chat message: {ex.Message}");
+            }
         }
 
         private void OnPlayerJoined(string playerName)
@@ -880,6 +893,11 @@ namespace WerewolfClient.Forms
                 actionButton.Dispose();
                 actionButton = null;
             }
+        }
+
+        private void pictureSheriff_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

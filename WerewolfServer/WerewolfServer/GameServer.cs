@@ -17,7 +17,7 @@ namespace WerewolfServer
         {
             _server = new TcpListener(IPAddress.Any, _port);
             _server.Start();
-            Console.WriteLine($"Server started on port {_port}...");
+            Console.WriteLine($"Server da duoc tao tren port {_port}...");
 
             while (true)
             {
@@ -49,7 +49,7 @@ namespace WerewolfServer
                     if (bytesRead > 0)
                     {
                         string message = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
-                        Console.WriteLine($"Received: {message}");
+                        Console.WriteLine($"Message: {message}");
 
                         string[] messages = message.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
                         foreach (string msg in messages)
@@ -88,7 +88,7 @@ namespace WerewolfServer
                 switch (command)
                 {
                      case "CREATE_ROOM":
-                        Console.WriteLine("[SERVER] Bắt đầu tạo phòng...");
+                        Console.WriteLine("[SERVER] Bat dau tao phong...");
                         if (parts.Length >= 3)
                         {
                             string creatorName = parts[2];
@@ -96,9 +96,9 @@ namespace WerewolfServer
                             Console.WriteLine($"[SERVER] roomId={roomId}, creatorName={creatorName}");
                             try {
                                 _rooms[roomId] = new Room(roomId);
-                                Console.WriteLine("[SERVER] Đã tạo room object");
+                                Console.WriteLine("[SERVER] Da tạo room object");
                                 player = new Player(client, creatorName);
-                                Console.WriteLine("[SERVER] Đã tạo player object");
+                                Console.WriteLine("[SERVER] Da tạo player object");
                                 response = $"ROOM_CREATED:{roomId}";
                                 Console.WriteLine("[SERVER] response=" + response);
                                 if (!string.IsNullOrEmpty(response))
@@ -107,10 +107,10 @@ namespace WerewolfServer
                                     client.GetStream().Write(data, 0, data.Length);
                                 }
                                 _rooms[roomId].AddPlayer(player);
-                                Console.WriteLine("[SERVER] Đã add player vào room");
+                                Console.WriteLine("[SERVER] Da add player vào room");
                                 response = "";
                             } catch (Exception ex) {
-                                Console.WriteLine($"[SERVER] Lỗi khi tạo phòng: {ex.Message}\n{ex.StackTrace}");
+                                Console.WriteLine($"[SERVER] Loi khi tạo phòng: {ex.Message}\n{ex.StackTrace}");
                             }
                         }
                         break;
@@ -141,7 +141,7 @@ namespace WerewolfServer
                             string msg = parts[3];
                             if (_rooms.ContainsKey(roomId))
                             {   
-                                Console.WriteLine($"[SERVER] Gửi tới {roomId}: {sender}:{msg}");
+                                Console.WriteLine($"[SERVER] Gui toi {roomId}: {sender}:{msg}");
                                 _rooms[roomId].Broadcast($"CHAT_MESSAGE:{sender}:{msg}", "");
                             }
                         }
