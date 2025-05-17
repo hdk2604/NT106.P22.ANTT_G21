@@ -1,6 +1,5 @@
 ﻿using System.Drawing;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace WerewolfClient.Forms
 {
@@ -34,6 +33,7 @@ namespace WerewolfClient.Forms
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(InGameForm));
             this.panelLeft = new System.Windows.Forms.Panel();
+            this.btnQuit = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
@@ -63,6 +63,23 @@ namespace WerewolfClient.Forms
             this.panelLeft.Name = "panelLeft";
             this.panelLeft.Size = new System.Drawing.Size(400, 900);
             this.panelLeft.TabIndex = 0;
+            // 
+            // btnQuit
+            // 
+            this.btnQuit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnQuit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btnQuit.FlatAppearance.BorderSize = 0;
+            this.btnQuit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnQuit.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnQuit.ForeColor = System.Drawing.Color.White;
+            this.btnQuit.Location = new System.Drawing.Point(255, 4);
+            this.btnQuit.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.btnQuit.Name = "btnQuit";
+            this.btnQuit.Size = new System.Drawing.Size(122, 76);
+            this.btnQuit.TabIndex = 5;
+            this.btnQuit.Text = "QUIT";
+            this.btnQuit.UseVisualStyleBackColor = false;
+            this.btnQuit.Click += new System.EventHandler(this.BtnQuit_Click);
             // 
             // button1
             // 
@@ -112,6 +129,7 @@ namespace WerewolfClient.Forms
             // panelRole
             // 
             this.panelRole.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
+            this.panelRole.Controls.Add(this.btnQuit);
             this.panelRole.Controls.Add(this.btnRole);
             this.panelRole.Location = new System.Drawing.Point(10, 100);
             this.panelRole.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
@@ -127,10 +145,11 @@ namespace WerewolfClient.Forms
             this.btnRole.ForeColor = System.Drawing.Color.White;
             this.btnRole.Location = new System.Drawing.Point(0, 3);
             this.btnRole.Name = "btnRole";
-            this.btnRole.Size = new System.Drawing.Size(370, 77);
+            this.btnRole.Size = new System.Drawing.Size(249, 77);
             this.btnRole.TabIndex = 0;
             this.btnRole.Text = "Role";
             this.btnRole.UseVisualStyleBackColor = false;
+            this.btnRole.Click += new System.EventHandler(this.btnRole_Click);
             // 
             // panelTopLeft
             // 
@@ -172,19 +191,10 @@ namespace WerewolfClient.Forms
             // 
             // buttonExit
             // 
-            this.buttonExit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(53)))), ((int)(((byte)(69)))));
-            this.buttonExit.FlatAppearance.BorderSize = 0;
-            this.buttonExit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.buttonExit.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.buttonExit.ForeColor = System.Drawing.Color.White;
-            this.buttonExit.Location = new System.Drawing.Point(10, 10);
-            this.buttonExit.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.buttonExit.Location = new System.Drawing.Point(0, 0);
             this.buttonExit.Name = "buttonExit";
-            this.buttonExit.Size = new System.Drawing.Size(40, 40);
+            this.buttonExit.Size = new System.Drawing.Size(75, 23);
             this.buttonExit.TabIndex = 0;
-            this.buttonExit.Text = "X";
-            this.buttonExit.UseVisualStyleBackColor = false;
-            this.buttonExit.Click += new System.EventHandler(this.buttonExit_Click);
             // 
             // tableLayoutPanel1
             // 
@@ -230,7 +240,6 @@ namespace WerewolfClient.Forms
 
         }
 
-
         #endregion
         private System.Windows.Forms.Panel panelTopLeft;
         private System.Windows.Forms.Button buttonExit;
@@ -243,6 +252,6 @@ namespace WerewolfClient.Forms
         private TableLayoutPanel tableLayoutPanel1;
         private Label labelTimer;
         private System.Windows.Forms.Button btnRole;
+        private System.Windows.Forms.Button btnQuit;
     }
 }
-

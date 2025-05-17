@@ -96,9 +96,9 @@ namespace WerewolfServer
                             Console.WriteLine($"[SERVER] roomId={roomId}, creatorName={creatorName}");
                             try {
                                 _rooms[roomId] = new Room(roomId);
-                                Console.WriteLine("[SERVER] Da tạo room object");
+                                Console.WriteLine("[SERVER] Da tao room object");
                                 player = new Player(client, creatorName);
-                                Console.WriteLine("[SERVER] Da tạo player object");
+                                Console.WriteLine("[SERVER] Da tao player object");
                                 response = $"ROOM_CREATED:{roomId}";
                                 Console.WriteLine("[SERVER] response=" + response);
                                 if (!string.IsNullOrEmpty(response))
@@ -110,7 +110,7 @@ namespace WerewolfServer
                                 Console.WriteLine("[SERVER] Da add player vào room");
                                 response = "";
                             } catch (Exception ex) {
-                                Console.WriteLine($"[SERVER] Loi khi tạo phòng: {ex.Message}\n{ex.StackTrace}");
+                                Console.WriteLine($"[SERVER] Loi khi tao phong: {ex.Message}\n{ex.StackTrace}");
                             }
                         }
                         break;
@@ -220,7 +220,7 @@ namespace WerewolfServer
                         {
                             if (player.Client.Connected)
                             {
-                                Console.WriteLine($"[SERVER] Gửi tới {player.Name}: {message}");
+                                Console.WriteLine($"[SERVER] Gui toi {player.Name}: {message}");
                                 byte[] data = Encoding.UTF8.GetBytes(message + "\n");
                                 player.Client.GetStream().Write(data, 0, data.Length);
                             }
@@ -232,7 +232,7 @@ namespace WerewolfServer
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[SERVER] Lỗi gửi tới {player.Name}: {ex.Message}");
+                        Console.WriteLine($"[SERVER] Loi gui toi {player.Name}: {ex.Message}");
                         disconnectedPlayers.Add(player);
                     }
                 }

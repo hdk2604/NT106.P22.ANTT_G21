@@ -121,6 +121,9 @@
     <EmbeddedResource Include="Forms\GameForm.resx">
       <DependentUpon>GameForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Forms\GameRoomForm.resx">
+      <DependentUpon>GameRoomForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\InGameForm.resx">
       <DependentUpon>InGameForm.cs</DependentUpon>
     </EmbeddedResource>
