@@ -121,27 +121,24 @@ namespace WerewolfClient.Forms
         }
         private void SetPlaceholder()
         {
-            // Kiểm tra nếu richTextBox2 rỗng, hiển thị placeholder
             if (string.IsNullOrWhiteSpace(richTextBox2.Text))
             {
-                richTextBox2.ForeColor = Color.Gray;  // Màu chữ placeholder
+                richTextBox2.ForeColor = Color.Gray;
                 richTextBox2.Text = placeholderText;
             }
         }
 
         private void richTextBox2_Enter(object sender, EventArgs e)
         {
-            // Khi người dùng click vào richTextBox2, nếu có placeholder, xóa nó
             if (richTextBox2.Text == placeholderText)
             {
                 richTextBox2.Text = "";
-                richTextBox2.ForeColor = Color.White;  // Màu chữ khi nhập
+                richTextBox2.ForeColor = Color.FromArgb(200, 200, 200);
             }
         }
 
         private void richTextBox2_Leave(object sender, EventArgs e)
         {
-            // Khi người dùng rời khỏi richTextBox2 và nó rỗng, hiển thị lại placeholder
             if (string.IsNullOrWhiteSpace(richTextBox2.Text))
             {
                 SetPlaceholder();
@@ -149,13 +146,22 @@ namespace WerewolfClient.Forms
         }
         private void button1_Click(object sender, EventArgs e)
         {
-            // Thêm nội dung từ richTextBox2 vào richTextBox1 và làm mới richTextBox2
-            if (richTextBox2.Text != placeholderText && !string.IsNullOrWhiteSpace(richTextBox2.Text))
+            try
             {
-                string message = richTextBox2.Text;
-                SendMessage($"CHAT_MESSAGE:{roomId}:{CurrentUserName}:{message}");
-                richTextBox2.Clear();
-                SetPlaceholder();  // Đặt lại placeholder sau khi gửi
+                if (richTextBox2.Text != placeholderText && !string.IsNullOrWhiteSpace(richTextBox2.Text))
+                {
+                    string message = richTextBox2.Text.Trim();
+                    if (!string.IsNullOrEmpty(message))
+                    {
+                        SendMessage($"CHAT_MESSAGE:{roomId}:{CurrentUserName}:{message}");
+                        richTextBox2.Clear();
+                        SetPlaceholder();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi gửi tin nhắn: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -286,40 +292,58 @@ namespace WerewolfClient.Forms
                 switch (command)
                 {
                     case "CHAT_MESSAGE":
-                        if (parts.Length >= 3)
+                        if (parts.Length >= 4)
                         {
-                            string sender = parts[1];
-                            string msg = string.Join(":", parts.Skip(2));
-                            AddChatMessage(sender, msg);
+                            string roomId = parts[1];
+                            string sender = parts[2];
+                            string msg = string.Join(":", parts.Skip(3));
+                            if (roomId == this.roomId)
+                            {
+                                this.Invoke((MethodInvoker)delegate
+                                {
+                                    AddChatMessage(sender, msg);
+                                });
+                            }
                         }
                         break;
                     case "PLAYER_JOINED":
                         if (parts.Length >= 2)
                         {
                             string newPlayer = parts[1];
-                            OnPlayerJoined(newPlayer);
+                            this.Invoke((MethodInvoker)delegate
+                            {
+                                OnPlayerJoined(newPlayer);
+                                AddChatMessage("Hệ thống", $"{newPlayer} đã tham gia phòng");
+                            });
                         }
                         break;
                     case "PLAYER_LEFT":
                         if (parts.Length >= 2)
                         {
                             string leftPlayer = parts[1];
-                            OnPlayerLeft(leftPlayer);
+                            this.Invoke((MethodInvoker)delegate
+                            {
+                                OnPlayerLeft(leftPlayer);
+                                AddChatMessage("Hệ thống", $"{leftPlayer} đã rời khỏi phòng");
+                            });
                         }
                         break;
                     case "PLAYER_LIST":
                         if (parts.Length >= 2)
                         {
                             string[] playerList = parts[1].Split(',');
-                            players = playerList.ToList();
-                            UpdatePlayerList();
+                            this.Invoke((MethodInvoker)delegate
+                            {
+                                players = playerList.ToList();
+                                UpdatePlayerList();
+                            });
                         }
                         break;
                 }
             }
             catch (Exception ex)
             {
-                richTextBox1.AppendText($"Error processing message: {ex.Message}\n");
+                MessageBox.Show($"Lỗi xử lý tin nhắn: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -333,13 +357,15 @@ namespace WerewolfClient.Forms
                     return;
                 }
 
-                string formattedMessage = $"[{DateTime.Now:HH:mm}] {sender}: {message}";
-                richTextBox1.AppendText(formattedMessage + Environment.NewLine);
+                string timestamp = DateTime.Now.ToString("HH:mm");
+                string formattedMessage = $"[{timestamp}] {sender}: {message}\n";
+                
+                richTextBox1.AppendText(formattedMessage);
+                richTextBox1.SelectionStart = richTextBox1.Text.Length;
                 richTextBox1.ScrollToCaret();
             }
             catch (Exception ex)
             {
-                // Log error but don't show to user to avoid spam
                 System.Diagnostics.Debug.WriteLine($"Error adding chat message: {ex.Message}");
             }
         }
@@ -898,6 +924,90 @@ namespace WerewolfClient.Forms
         private void pictureSheriff_Click(object sender, EventArgs e)
         {
 
+        }
+
+        private void btnRole_Click(object sender, EventArgs e)
+        {
+            RolesForm rolesForm = new RolesForm();
+            rolesForm.ShowDialog();
+        }
+
+
+        private async void BtnQuit_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Show confirmation dialog
+                DialogResult result = MessageBox.Show(
+                    "Bạn có chắc chắn muốn thoát về lobby?",
+                    "Xác nhận thoát",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    // Send quit message to server
+                    if (isConnected && client != null && stream != null)
+                    {
+                        SendMessage($"QUIT_ROOM:{roomId}:{CurrentUserName}");
+                    }
+
+                    // Clean up resources
+                    if (phaseListener != null)
+                    {
+                        phaseListener.Dispose();
+                        phaseListener = null;
+                    }
+                    if (timeListener != null)
+                    {
+                        timeListener.Dispose();
+                        timeListener = null;
+                    }
+                    if (gameStatusListener != null)
+                    {
+                        gameStatusListener.Dispose();
+                        gameStatusListener = null;
+                    }
+                    if (pollTimer != null)
+                    {
+                        pollTimer.Stop();
+                        pollTimer.Dispose();
+                    }
+                    if (phaseTimer != null)
+                    {
+                        phaseTimer.Stop();
+                        phaseTimer.Dispose();
+                    }
+
+                    // Close TCP connection
+                    if (stream != null)
+                    {
+                        stream.Close();
+                        stream = null;
+                    }
+                    if (client != null)
+                    {
+                        client.Close();
+                        client = null;
+                    }
+
+                    // Stop receive thread
+                    if (receiveThread != null && receiveThread.IsAlive)
+                    {
+                        receiveThread.Abort();
+                        receiveThread = null;
+                    }
+
+                    // Update the instantiation of LobbyForm to include the required 'email' parameter.  
+                    LobbyForm lobbyForm = new LobbyForm(CurrentUserManager.CurrentUser?.Email);
+                    lobbyForm.Show();
+                    this.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi thoát game: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

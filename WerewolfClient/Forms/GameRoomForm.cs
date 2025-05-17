@@ -408,7 +408,6 @@ namespace WerewolfClient.Forms
         public void OnGameStarted()
         {
             // Ẩn phòng chờ, hiện form chơi game
-            MessageBox.Show($"Hello");
             this.Invoke((MethodInvoker)delegate {
                 this.Hide();
                 var inGameForm = new InGameForm(players, client);
@@ -448,6 +447,11 @@ namespace WerewolfClient.Forms
                 // Có thể log lỗi nếu cần
                 Console.WriteLine($"Firebase leave error: {ex.Message}");
             }
+        }
+
+        private void lblPlayerCount_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
