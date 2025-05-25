@@ -33,20 +33,21 @@ namespace WerewolfClient.Forms
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(InGameForm));
             this.panelLeft = new System.Windows.Forms.Panel();
-            this.btnQuit = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
             this.richTextBox2 = new System.Windows.Forms.RichTextBox();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.panelRole = new System.Windows.Forms.Panel();
+            this.btnQuit = new System.Windows.Forms.Button();
             this.btnRole = new System.Windows.Forms.Button();
             this.panelTopLeft = new System.Windows.Forms.Panel();
             this.labelTimer = new System.Windows.Forms.Label();
-            this.buttonHelp = new System.Windows.Forms.Button();
-            this.buttonExit = new System.Windows.Forms.Button();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.panelLoadingOverlay = new System.Windows.Forms.Panel();
+            this.labelLoading = new System.Windows.Forms.Label();
             this.panelLeft.SuspendLayout();
             this.panelRole.SuspendLayout();
             this.panelTopLeft.SuspendLayout();
+            this.panelLoadingOverlay.SuspendLayout();
             this.SuspendLayout();
             // 
             // panelLeft
@@ -63,23 +64,6 @@ namespace WerewolfClient.Forms
             this.panelLeft.Name = "panelLeft";
             this.panelLeft.Size = new System.Drawing.Size(400, 900);
             this.panelLeft.TabIndex = 0;
-            // 
-            // btnQuit
-            // 
-            this.btnQuit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnQuit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.btnQuit.FlatAppearance.BorderSize = 0;
-            this.btnQuit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnQuit.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnQuit.ForeColor = System.Drawing.Color.White;
-            this.btnQuit.Location = new System.Drawing.Point(255, 4);
-            this.btnQuit.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.btnQuit.Name = "btnQuit";
-            this.btnQuit.Size = new System.Drawing.Size(122, 76);
-            this.btnQuit.TabIndex = 5;
-            this.btnQuit.Text = "QUIT";
-            this.btnQuit.UseVisualStyleBackColor = false;
-            this.btnQuit.Click += new System.EventHandler(this.BtnQuit_Click);
             // 
             // button1
             // 
@@ -137,6 +121,23 @@ namespace WerewolfClient.Forms
             this.panelRole.Size = new System.Drawing.Size(380, 80);
             this.panelRole.TabIndex = 1;
             // 
+            // btnQuit
+            // 
+            this.btnQuit.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnQuit.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.btnQuit.FlatAppearance.BorderSize = 0;
+            this.btnQuit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnQuit.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnQuit.ForeColor = System.Drawing.Color.White;
+            this.btnQuit.Location = new System.Drawing.Point(255, 4);
+            this.btnQuit.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.btnQuit.Name = "btnQuit";
+            this.btnQuit.Size = new System.Drawing.Size(122, 76);
+            this.btnQuit.TabIndex = 5;
+            this.btnQuit.Text = "QUIT";
+            this.btnQuit.UseVisualStyleBackColor = false;
+            this.btnQuit.Click += new System.EventHandler(this.BtnQuit_Click);
+            // 
             // btnRole
             // 
             this.btnRole.BackColor = System.Drawing.Color.Firebrick;
@@ -155,8 +156,6 @@ namespace WerewolfClient.Forms
             // 
             this.panelTopLeft.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
             this.panelTopLeft.Controls.Add(this.labelTimer);
-            this.panelTopLeft.Controls.Add(this.buttonHelp);
-            this.panelTopLeft.Controls.Add(this.buttonExit);
             this.panelTopLeft.Location = new System.Drawing.Point(10, 10);
             this.panelTopLeft.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.panelTopLeft.Name = "panelTopLeft";
@@ -173,28 +172,6 @@ namespace WerewolfClient.Forms
             this.labelTimer.Size = new System.Drawing.Size(89, 38);
             this.labelTimer.TabIndex = 2;
             this.labelTimer.Text = "00:00";
-            // 
-            // buttonHelp
-            // 
-            this.buttonHelp.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(122)))), ((int)(((byte)(204)))));
-            this.buttonHelp.FlatAppearance.BorderSize = 0;
-            this.buttonHelp.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.buttonHelp.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.buttonHelp.ForeColor = System.Drawing.Color.White;
-            this.buttonHelp.Location = new System.Drawing.Point(330, 10);
-            this.buttonHelp.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.buttonHelp.Name = "buttonHelp";
-            this.buttonHelp.Size = new System.Drawing.Size(40, 40);
-            this.buttonHelp.TabIndex = 1;
-            this.buttonHelp.Text = "?";
-            this.buttonHelp.UseVisualStyleBackColor = false;
-            // 
-            // buttonExit
-            // 
-            this.buttonExit.Location = new System.Drawing.Point(0, 0);
-            this.buttonExit.Name = "buttonExit";
-            this.buttonExit.Size = new System.Drawing.Size(75, 23);
-            this.buttonExit.TabIndex = 0;
             // 
             // tableLayoutPanel1
             // 
@@ -217,6 +194,27 @@ namespace WerewolfClient.Forms
             this.tableLayoutPanel1.TabIndex = 1;
             this.tableLayoutPanel1.Paint += new System.Windows.Forms.PaintEventHandler(this.tableLayoutPanel1_Paint);
             // 
+            // panelLoadingOverlay
+            // 
+            this.panelLoadingOverlay.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
+            this.panelLoadingOverlay.Controls.Add(this.labelLoading);
+            this.panelLoadingOverlay.Location = new System.Drawing.Point(406, 7);
+            this.panelLoadingOverlay.Name = "panelLoadingOverlay";
+            this.panelLoadingOverlay.Size = new System.Drawing.Size(880, 880);
+            this.panelLoadingOverlay.TabIndex = 2;
+            // 
+            // labelLoading
+            // 
+            this.labelLoading.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.labelLoading.Font = new System.Drawing.Font("Segoe UI", 14F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.labelLoading.ForeColor = System.Drawing.Color.White;
+            this.labelLoading.Location = new System.Drawing.Point(0, 0);
+            this.labelLoading.Name = "labelLoading";
+            this.labelLoading.Size = new System.Drawing.Size(880, 880);
+            this.labelLoading.TabIndex = 0;
+            this.labelLoading.Text = "Đang tải dữ liệu trò chơi...";
+            this.labelLoading.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
             // InGameForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
@@ -226,6 +224,7 @@ namespace WerewolfClient.Forms
             this.ClientSize = new System.Drawing.Size(1300, 900);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Controls.Add(this.panelLeft);
+            this.Controls.Add(this.panelLoadingOverlay);
             this.ForeColor = System.Drawing.Color.White;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
@@ -236,15 +235,14 @@ namespace WerewolfClient.Forms
             this.panelRole.ResumeLayout(false);
             this.panelTopLeft.ResumeLayout(false);
             this.panelTopLeft.PerformLayout();
+            this.panelLoadingOverlay.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
 
         #endregion
         private System.Windows.Forms.Panel panelTopLeft;
-        private System.Windows.Forms.Button buttonExit;
         private System.Windows.Forms.Panel panelRole;
-        private System.Windows.Forms.Button buttonHelp;
         private System.Windows.Forms.Panel panelLeft;
         private RichTextBox richTextBox1;
         private RichTextBox richTextBox2;
@@ -253,5 +251,8 @@ namespace WerewolfClient.Forms
         private Label labelTimer;
         private System.Windows.Forms.Button btnRole;
         private System.Windows.Forms.Button btnQuit;
+        private System.Windows.Forms.Panel panelLoadingOverlay;
+        private System.Windows.Forms.Label labelLoading;
+
     }
 }
