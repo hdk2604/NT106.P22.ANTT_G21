@@ -58,6 +58,8 @@ namespace WerewolfClient.Forms
         private StringBuilder receiveBuffer = new StringBuilder();
         private Panel selectedPlayerPanel = null;
         private Button actionButton = null;
+        private string currentActionTargetPlayerName; 
+        private string currentActionButtonText;
 
         public InGameForm(List<string> playerNames, TcpClient existingClient = null)
         {
@@ -74,50 +76,80 @@ namespace WerewolfClient.Forms
 
         private string placeholderText = "Nhập tin nhắn của bạn";
         private async void Form1_Load(object sender, EventArgs e)
-        {   
-            // Setup UI trước
-            panelTopLeft.BackColor = Color.FromArgb(100, 0, 0, 0);
-            panelRole.BackColor = Color.FromArgb(100, 0, 0, 0);
-            labelTimer.Font = new Font("Segoe UI", 28F, FontStyle.Bold);
-            labelTimer.ForeColor = Color.Orange;
-            labelTimer.BackColor = Color.Transparent;
-            labelTimer.Dock = DockStyle.Fill;
-            labelTimer.TextAlign = ContentAlignment.MiddleCenter;
-            labelTimer.BorderStyle = BorderStyle.None;
-            labelTimer.BringToFront();
-            labelTimer.Text = "Đang chờ dữ liệu...";
-            SetPlaceholder();
-            this.richTextBox2.Enter += new System.EventHandler(this.richTextBox2_Enter);
-            this.richTextBox2.Leave += new System.EventHandler(this.richTextBox2_Leave);
-            
-            AddPanelsToTable();
+        {
+            // Khởi tạo actionButton một lần
+            this.actionButton = new System.Windows.Forms.Button();
+            this.actionButton.Size = new System.Drawing.Size(120, 35); // Kích thước tùy chỉnh
+            this.actionButton.Visible = false; // Ẩn ban đầu
+            this.actionButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.actionButton.FlatAppearance.BorderSize = 1;
+            this.actionButton.FlatAppearance.BorderColor = System.Drawing.Color.Aqua; // Màu viền nổi bật
+            this.actionButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(48))))); // Màu nền tối
+            this.actionButton.ForeColor = System.Drawing.Color.White; // Màu chữ trắng
+            this.actionButton.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.actionButton.Name = "playerActionButton"; // Đặt tên để dễ nhận biết
+            this.actionButton.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.Controls.Add(this.actionButton); // Thêm vào Form chính
+            this.actionButton.BringToFront();     // Đảm bảo nó hiện trên các control khác
+
+            // panelLoadingOverlay đã được Visible = true từ Designer.
+            panelLoadingOverlay.Location = tableLayoutPanel1.Location; 
+            panelLoadingOverlay.Size = tableLayoutPanel1.Size;         
+            panelLoadingOverlay.BringToFront();                        
+
+            // Setup UI
+            panelTopLeft.BackColor = Color.FromArgb(100, 0, 0, 0); 
+            panelRole.BackColor = Color.FromArgb(100, 0, 0, 0);    
+            labelTimer.Font = new Font("Segoe UI", 28F, FontStyle.Bold); 
+            labelTimer.ForeColor = Color.Orange;                          
+            labelTimer.BackColor = Color.Transparent;                     
+            labelTimer.Dock = DockStyle.Fill;                             
+            labelTimer.TextAlign = ContentAlignment.MiddleCenter;      
+            labelTimer.BorderStyle = BorderStyle.None;                    
+            labelTimer.BringToFront();                                    
+            labelTimer.Text = "Đang chờ...";                             
+            SetPlaceholder();                                             
+            this.richTextBox2.Enter += new System.EventHandler(this.richTextBox2_Enter); 
+            this.richTextBox2.Leave += new System.EventHandler(this.richTextBox2_Leave); 
 
             // Load data sau
-            if (!isDataLoaded && !string.IsNullOrEmpty(currentUserId) && !string.IsNullOrEmpty(gameId))
+            if (!isDataLoaded && !string.IsNullOrEmpty(currentUserId) && !string.IsNullOrEmpty(gameId)) //
             {
-                isDataLoaded = true;
+                isDataLoaded = true; //
                 try
                 {
-                    await LoadCurrentUserRole();
-                    ListenPhaseFromFirebase();
-                    await LoadCurrentPhaseFromFirebase();
+                    if (IsHandleCreated) labelLoading.Text = "Đang chuẩn bị giao diện người chơi..."; //
+                    await AddPanelsToTable(); // Gọi và chờ AddPanelsToTable hoàn thành //
+
+                    if (IsHandleCreated) labelLoading.Text = "Đang đồng bộ trạng thái trò chơi..."; //
+                    ListenPhaseFromFirebase(); // Giả sử hàm này không block lâu hoặc chạy nền //
+                    await LoadCurrentPhaseFromFirebase(); //
+
+                    if (IsHandleCreated) panelLoadingOverlay.Visible = false; // Ẩn panel loading khi tất cả đã xong //
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error loading game data: {ex.Message}");
-                    isDataLoaded = false;
+                    isDataLoaded = false; 
+                    if (IsHandleCreated)
+                    {
+                        labelLoading.Text = $"Lỗi tải dữ liệu: {ex.Message}"; //
+                        MessageBox.Show($"Error loading game data: {ex.Message}"); //
+                    }
                 }
             }
-        }
-
-        private void buttonExit_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void pictureWerewolf_Click(object sender, EventArgs e)
-        {
-
+            else if (isDataLoaded) // Nếu form load lại nhưng dữ liệu đã có //
+            {
+                await AddPanelsToTable();
+                if (IsHandleCreated) panelLoadingOverlay.Visible = false; //
+            }
+            else // Không có currentUserId hoặc gameId //
+            {
+                if (IsHandleCreated)
+                {
+                    labelLoading.Text = "Lỗi: Thông tin game không hợp lệ."; //
+                                                                            
+                }
+            }
         }
         private void SetPlaceholder()
         {
@@ -400,7 +432,7 @@ namespace WerewolfClient.Forms
             }
         }
 
-        private void UpdatePlayerList()
+        private async void UpdatePlayerList() 
         {
             if (this.InvokeRequired)
             {
@@ -408,7 +440,7 @@ namespace WerewolfClient.Forms
                 return;
             }
             playerNames = new List<string>(players);
-            AddPanelsToTable();
+            await AddPanelsToTable();
         }
 
         private void richTextBox2_KeyDown(object sender, KeyEventArgs e)
@@ -424,13 +456,24 @@ namespace WerewolfClient.Forms
 
         }
 
-        private async void AddPanelsToTable()
+        private async Task AddPanelsToTable() 
         {
-            try 
+
+            if (tableLayoutPanel1.InvokeRequired)
             {
-                // Load role trước nếu chưa có
-                if (string.IsNullOrEmpty(currentUserRole))
+                await (Task)tableLayoutPanel1.Invoke(new Func<Task>(AddPanelsToTable));
+                return;
+            }
+
+            try
+            {
+                tableLayoutPanel1.SuspendLayout(); 
+                if (string.IsNullOrEmpty(currentUserRole) && !string.IsNullOrEmpty(currentUserId) && !string.IsNullOrEmpty(gameId))
                 {
+                    if (panelLoadingOverlay.Visible && IsHandleCreated) 
+                    {
+                        labelLoading.Text = "Đang tải thông tin vai trò...";
+                    }
                     await LoadCurrentUserRole();
                 }
 
@@ -441,7 +484,6 @@ namespace WerewolfClient.Forms
                 Image resizedImage = new Bitmap(originalImage, new Size(newWidth, newHeight));
                 int playerIndex = 0;
 
-                // Thay đổi số hàng từ 4 xuống 2
                 for (int row = 0; row < 2; row++)
                 {
                     for (int col = 0; col < 4; col++)
@@ -462,7 +504,7 @@ namespace WerewolfClient.Forms
                         p.Controls.Add(innerTLP);
 
                         if (playerIndex < playerNames.Count)
-                        {   
+                        {
                             string thisPlayerName = playerNames[playerIndex];
                             Label nameLabel = new Label();
                             nameLabel.Text = playerNames[playerIndex];
@@ -482,7 +524,7 @@ namespace WerewolfClient.Forms
                             }
                             else
                             {
-                                pictureBox.Image = Properties.Resources.UserIcon;
+                                pictureBox.Image = Properties.Resources.UserIcon; // Sử dụng UserIcon thay vì resizedImage nếu bạn muốn icon mặc định
                             }
                             pictureBox.Click += (s, e) => OnPlayerPanelClick(thisPlayerName, p);
                             pictureBox.SizeMode = PictureBoxSizeMode.Zoom;
@@ -509,7 +551,18 @@ namespace WerewolfClient.Forms
             }
             catch (Exception ex)
             {
-                richTextBox1.AppendText($"Error in AddPanelsToTable: {ex.Message}\n");
+                // Ghi log lỗi, ví dụ: vào richTextBox1 nếu nó đã sẵn sàng
+                if (IsHandleCreated && richTextBox1 != null) // Kiểm tra IsHandleCreated
+                {
+                    richTextBox1.AppendText($"Error in AddPanelsToTable: {ex.Message}\n");
+                }
+            }
+            finally
+            {
+                if (IsHandleCreated && tableLayoutPanel1 != null) // Kiểm tra IsHandleCreated
+                {
+                    tableLayoutPanel1.ResumeLayout(true); // Cho phép vẽ lại layout
+                }
             }
         }
 
@@ -854,77 +907,111 @@ namespace WerewolfClient.Forms
             }
         }
 
-        private void OnPlayerPanelClick(string targetPlayerName, Panel panel)
+        private void OnPlayerPanelClick(string targetPlayerName, Panel panelClicked) // panelClicked là panel của người chơi được nhấp vào
         {
-           
-            // Xóa nút cũ nếu có
-            if (actionButton != null)
+            // Luôn gỡ bỏ event handler cũ trước khi quyết định có gán lại hay không
+            if (this.actionButton != null)
             {
-                tableLayoutPanel1.Controls.Remove(actionButton);
-                actionButton.Dispose();
-                actionButton = null;
+                this.actionButton.Click -= CurrentActionButton_Click; // Sử dụng this.actionButton để rõ ràng
+                this.actionButton.Visible = false; // Ẩn nút đi trước khi kiểm tra logic mới
             }
 
-            // Kiểm tra phase và role để quyết định có hiện nút không
             bool showButton = false;
             string buttonText = "";
 
-            if (currentPhase == GamePhase.Night)
+            if (currentPhase == GamePhase.Night) //
             {
-                if (currentUserRole == "werewolf" && targetPlayerName != CurrentUserName)
+                if (currentUserRole == "werewolf" && targetPlayerName != CurrentUserName) //
                 {
-                    showButton = true;
-                    buttonText = "Giết";
+                    showButton = true; //
+                    buttonText = "Giết"; //
                 }
-                else if (currentUserRole == "bodyguard")
+                else if (currentUserRole == "bodyguard") // Bodyguard có thể tự bảo vệ hoặc bảo vệ người khác //
                 {
-                    showButton = true;
-                    buttonText = "Bảo vệ";
+                    showButton = true; //
+                    buttonText = "Bảo vệ"; //
                 }
-                else if (currentUserRole == "seer" && targetPlayerName != CurrentUserName)
+                else if (currentUserRole == "seer" && targetPlayerName != CurrentUserName) //
                 {
-                    showButton = true;
-                    buttonText = "Soi";
+                    showButton = true; //
+                    buttonText = "Soi"; //
                 }
-                else if (currentUserRole == "witch")
+                else if (currentUserRole == "witch") // Logic cho Witch cần cụ thể hơn về việc dùng thuốc nào //
                 {
-                    showButton = true;
-                    buttonText = (targetPlayerName == CurrentUserName) ? "Cứu" : "Giết";
+                    // Ví dụ đơn giản: Nút chung "Dùng Kỹ năng", logic chi tiết hơn khi click
+                    showButton = true; //
+                    buttonText = "Dùng Thuốc";
                 }
             }
-
-
-            // TEST: luôn tạo nút để kiểm tra vị trí
-            if (true)
+            else if (currentPhase == GamePhase.DayVote) //
             {
-                actionButton = new Button();
-                actionButton.Text = string.IsNullOrEmpty(buttonText) ? "Test" : buttonText;
-                actionButton.Size = new Size(80, 35);
-                actionButton.Location = new Point(100, 100); // Đặt rõ ràng trong tableLayoutPanel1
-                actionButton.BringToFront();
-                tableLayoutPanel1.Controls.Add(actionButton);
-
-                actionButton.Click += (s, e) =>
+                // Chỉ cho phép bỏ phiếu cho người khác và người chơi hiện tại chưa vote
+                if (targetPlayerName != CurrentUserName /* && !currentPlayerHasVoted (cần thêm biến trạng thái này) */)
                 {
-                    MessageBox.Show($"Bạn đã chọn {buttonText} {targetPlayerName}");
-                };
+                    showButton = true;
+                    buttonText = "Bỏ phiếu";
+                }
+            }
+            // ... Các logic khác cho các vai trò và phase khác ...
+
+            if (showButton && this.actionButton != null)
+            {
+                this.actionButton.Text = buttonText;
+
+                // Tính toán vị trí cho actionButton (là con của Form) để nó xuất hiện gần panelClicked
+                Point panelScreenLocation = panelClicked.PointToScreen(Point.Empty); // Tọa độ của panelClicked trên màn hình
+                Point panelFormLocation = this.PointToClient(panelScreenLocation);    // Chuyển sang tọa độ của Form
+                int buttonX = panelFormLocation.X + (panelClicked.Width - this.actionButton.Width) / 2; // Căn giữa theo chiều ngang của panelClicked
+                int buttonY = panelFormLocation.Y + panelClicked.Height + 5; // Cách panelClicked 5px về phía dưới
+
+                // Nếu nút bị tràn ra khỏi mép dưới của Form, đặt nó bên trên panelClicked
+                if (buttonY + this.actionButton.Height > this.ClientSize.Height - 5) // Cách mép form 5px
+                {
+                    buttonY = panelFormLocation.Y - this.actionButton.Height - 5; // Cách panelClicked 5px về phía trên
+                }
+
+                // Đảm bảo nút không bị lệch ra ngoài Form theo chiều ngang
+                if (buttonX < 5) buttonX = 5; // Cách mép trái 5px
+                if (buttonX + this.actionButton.Width > this.ClientSize.Width - 5) // Cách mép phải 5px
+                {
+                    buttonX = this.ClientSize.Width - this.actionButton.Width - 5;
+                }
+
+                this.actionButton.Location = new Point(buttonX, buttonY);
+                this.actionButton.Visible = true;
+                this.actionButton.BringToFront(); // Đảm bảo nút luôn nằm trên
+
+                // Lưu thông tin cho event handler và gán lại event
+                currentActionTargetPlayerName = targetPlayerName;
+                currentActionButtonText = buttonText;
+                this.actionButton.Click += CurrentActionButton_Click;
+            }
+        }
+
+        private void CurrentActionButton_Click(object sender, EventArgs e)
+        {
+            AddChatMessage("Hành động", $"Bạn đã chọn {currentActionButtonText} người chơi {currentActionTargetPlayerName}.");
+
+            if (this.actionButton != null)
+            {
+                this.actionButton.Visible = false;
+                this.actionButton.Click -= CurrentActionButton_Click;
             }
         }
 
         private void TableLayoutPanel1_Click(object sender, EventArgs e)
         {
-            if (actionButton != null)
+            if (this.actionButton != null && this.actionButton.Visible)
             {
-                tableLayoutPanel1.Controls.Remove(actionButton);
-                actionButton.Dispose();
-                actionButton = null;
+                Point cursorPosOnForm = this.PointToClient(Cursor.Position);
+                if (!this.actionButton.Bounds.Contains(cursorPosOnForm))
+                {
+                    this.actionButton.Visible = false;
+                    this.actionButton.Click -= CurrentActionButton_Click;
+                }
             }
         }
 
-        private void pictureSheriff_Click(object sender, EventArgs e)
-        {
-
-        }
 
         private void btnRole_Click(object sender, EventArgs e)
         {
@@ -937,7 +1024,6 @@ namespace WerewolfClient.Forms
         {
             try
             {
-                // Show confirmation dialog
                 DialogResult result = MessageBox.Show(
                     "Bạn có chắc chắn muốn thoát về lobby?",
                     "Xác nhận thoát",
