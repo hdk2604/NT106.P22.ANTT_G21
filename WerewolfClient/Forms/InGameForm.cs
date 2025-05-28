@@ -476,6 +476,10 @@ namespace WerewolfClient.Forms
                     }
                     await LoadCurrentUserRole();
                 }
+                var firebase = new FirebaseHelper();
+                var playerObjects = await firebase.GetPlayers(gameId);
+                var alivePlayers = playerObjects.Where(p => p.IsAlive).ToList();
+                playerNames = alivePlayers.Select(p => p.Name).ToList();
 
                 tableLayoutPanel1.Controls.Clear();
                 Image originalImage = Properties.Resources.UserIcon;
@@ -514,6 +518,7 @@ namespace WerewolfClient.Forms
                             if (!string.IsNullOrEmpty(CurrentUserName) && playerNames[playerIndex] == CurrentUserName)
                                 nameLabel.ForeColor = Color.Gold;
                             else
+                            
                                 nameLabel.ForeColor = Color.White;
                             innerTLP.Controls.Add(nameLabel, 0, 0);
 
@@ -879,20 +884,7 @@ namespace WerewolfClient.Forms
             }
         }
 
-        private async Task NextPhase_Host()
-        {
-            try
-            {
-                var firebaseHelper = new FirebaseHelper();
-                string currentPhaseStr = currentPhase.ToString().ToLower();
-                await firebaseHelper.NextPhase(gameId, currentPhaseStr);
-                await Task.Delay(500);
-            }
-            catch (Exception ex)
-            {
-                richTextBox1.AppendText($"Error in NextPhase_Host: {ex.Message}\n");
-            }
-        }
+       
 
         private async Task CheckWerewolfWin()
         {
@@ -907,8 +899,13 @@ namespace WerewolfClient.Forms
             }
         }
 
-        private void OnPlayerPanelClick(string targetPlayerName, Panel panelClicked) // panelClicked là panel của người chơi được nhấp vào
+        private async void OnPlayerPanelClick(string targetPlayerName, Panel panelClicked) // panelClicked là panel của người chơi được nhấp vào
         {
+            var firebase = new FirebaseHelper();
+            var players = await firebase.GetPlayers(gameId);
+            var targetPlayer = players.FirstOrDefault(p => p.Name == targetPlayerName);
+            if (targetPlayer == null || !targetPlayer.IsAlive) return;
+
             // Luôn gỡ bỏ event handler cũ trước khi quyết định có gán lại hay không
             if (this.actionButton != null)
             {
@@ -988,17 +985,72 @@ namespace WerewolfClient.Forms
             }
         }
 
-        private void CurrentActionButton_Click(object sender, EventArgs e)
+        private async void CurrentActionButton_Click(object sender, EventArgs e)
         {
+            var firebase = new FirebaseHelper();
+
+            var players = await firebase.GetPlayers(gameId);
+            var targetPlayer = players.FirstOrDefault(p => p.Name == currentActionTargetPlayerName);
+
+            if (targetPlayer == null || !targetPlayer.IsAlive)
+            {
+                AddChatMessage("Lỗi", "Không thể chọn người chơi đã chết hoặc không tồn tại.");
+                return;
+            }
+
             AddChatMessage("Hành động", $"Bạn đã chọn {currentActionButtonText} người chơi {currentActionTargetPlayerName}.");
 
-            if (this.actionButton != null)
+        
+
+            if (currentActionButtonText == "Giết" && currentUserRole == "werewolf")
             {
-                this.actionButton.Visible = false;
-                this.actionButton.Click -= CurrentActionButton_Click;
+                await firebase.WereWolfAction(gameId, currentUserId, targetPlayer.Id);
+                AddChatMessage("Hệ thống", $"Bạn đã chọn giết {currentActionTargetPlayerName}.");
+                AddChatMessage("DEBUG", $"werewolfId = {currentUserId}");
+                AddChatMessage("DEBUG", $"targetPlayerId = {targetPlayer.Id}");
+                AddChatMessage("DEBUG", $"gameId = {gameId}");
             }
+           
         }
 
+        private async Task NextPhase_Host()
+        {
+            try
+            {
+                var firebaseHelper = new FirebaseHelper();
+
+                // Nếu là phase "night", xử lý kết quả đêm trước khi chuyển phase
+                if (currentPhase == GamePhase.Night)
+                {
+                    await firebaseHelper.ProcessNightResults(gameId);
+                }
+
+                string currentPhaseStr;
+                switch (currentPhase)
+                {
+                    case GamePhase.Night:
+                        currentPhaseStr = "night";
+                        break;
+                    case GamePhase.DayDiscussion:
+                        currentPhaseStr = "day_discussion";
+                        break;
+                    case GamePhase.DayVote:
+                        currentPhaseStr = "day_vote";
+                        break;
+                    default:
+                        currentPhaseStr = "night";
+                        break;
+                }
+
+                await firebaseHelper.NextPhase(gameId, currentPhaseStr);
+
+                await Task.Delay(500);
+            }
+            catch (Exception ex)
+            {
+                richTextBox1.AppendText($"Error in NextPhase_Host: {ex.Message}\n");
+            }
+        }
         private void TableLayoutPanel1_Click(object sender, EventArgs e)
         {
             if (this.actionButton != null && this.actionButton.Visible)
