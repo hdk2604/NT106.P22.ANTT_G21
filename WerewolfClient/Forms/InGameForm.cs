@@ -60,6 +60,8 @@ namespace WerewolfClient.Forms
         private Button actionButton = null;
         private string currentActionTargetPlayerName; 
         private string currentActionButtonText;
+        private System.Threading.CancellationTokenSource _cancellationTokenSource;
+        private Task _receivingTask;
 
         public InGameForm(List<string> playerNames, TcpClient existingClient = null)
         {
@@ -70,6 +72,7 @@ namespace WerewolfClient.Forms
             Load += Form1_Load;
             ConnectToServer(existingClient);
             tableLayoutPanel1.Click += TableLayoutPanel1_Click;
+            this.FormClosing += InGameForm_FormClosing;
         }
 
         public InGameForm() : this(new List<string>()) { }
@@ -201,6 +204,9 @@ namespace WerewolfClient.Forms
         {
             try
             {
+                // Initialize CancellationTokenSource
+                _cancellationTokenSource = new System.Threading.CancellationTokenSource();
+
                 if (existingClient != null)
                 {
                     client = existingClient;
@@ -215,10 +221,8 @@ namespace WerewolfClient.Forms
                     SendMessage($"JOIN_ROOM:{roomId}:{CurrentUserName}");
                 }
 
-                // Start receive thread
-                receiveThread = new Thread(ReceiveMessages);
-                receiveThread.IsBackground = true;
-                receiveThread.Start();
+                // Start receiving messages asynchronously on a background thread
+                _receivingTask = Task.Run(() => StartReceivingAsync(_cancellationTokenSource.Token));
             }
             catch (Exception ex)
             {
@@ -264,27 +268,29 @@ namespace WerewolfClient.Forms
             }
         }
 
-        private void ReceiveMessages()
+        private async Task StartReceivingAsync(System.Threading.CancellationToken cancellationToken)
         {
             byte[] buffer = new byte[4096];
-            int bytesRead;
             StringBuilder messageBuffer = new StringBuilder();
 
             try
             {
-                while (isConnected)
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    bytesRead = stream.Read(buffer, 0, buffer.Length);
+                    int bytesRead = 0;
+                    // Use ReadAsync with cancellation token
+                    bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken);
+
                     if (bytesRead > 0)
                     {
                         messageBuffer.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
                         string content = messageBuffer.ToString();
-                        
-                        // Xử lý tất cả tin nhắn hoàn chỉnh trong buffer
+
+                        // Process complete messages
                         int lastNewLine = content.LastIndexOf('\n');
                         if (lastNewLine >= 0)
                         {
-                            string[] messages = content.Substring(0, lastNewLine + 1).Split('\n');
+                            string[] messages = content.Substring(0, lastNewLine + 1).Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
                             foreach (string message in messages)
                             {
                                 if (!string.IsNullOrEmpty(message.Trim()))
@@ -293,23 +299,41 @@ namespace WerewolfClient.Forms
                                     uiContext.Post(_ => ProcessServerMessage(trimmedMessage), null);
                                 }
                             }
-                            // Giữ lại phần chưa hoàn chỉnh
+                            // Keep the remaining partial message
                             messageBuffer.Clear();
                             messageBuffer.Append(content.Substring(lastNewLine + 1));
                         }
                     }
+                    else // Connection was closed by the remote host gracefully
+                    {
+                        // This can happen if the server closes the connection
+                        isConnected = false; // Signal to exit the loop
+                        break; // Exit the while loop
+                    }
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                // This exception is expected when the cancellation token is signaled
+                isConnected = false;
             }
             catch (Exception ex)
             {
-                if (isConnected)
+                // Handle other unexpected exceptions in the receive loop
+                isConnected = false;
+                uiContext.Post(_ =>
                 {
-                    uiContext.Post(_ =>
-                    {
-                        MessageBox.Show($"Lỗi kết nối: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        this.Close();
-                    }, null);
-                }
+                    // Show the error but don't automatically close the form here
+                    // The FormClosing event handler will handle cleanup and closing
+                    MessageBox.Show($"Lỗi trong luồng nhận dữ liệu: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }, null);
+            }
+            finally
+            {
+                // Ensure resources are cleaned up if the receive task completes
+                // Closing client/stream here is generally safe after the receive loop exits
+                // However, we primarily rely on the UI thread's cleanup for consistency
+                // No specific cleanup needed directly in this finally block if UI thread handles it
             }
         }
 
@@ -776,7 +800,10 @@ namespace WerewolfClient.Forms
                     }
                     catch (Exception ex)
                     {
-                        richTextBox1.AppendText($"Invalid startTime format, using UtcNow. Parse error: {ex.Message}\n");
+                        if (IsHandleCreated)
+                        {
+                            richTextBox1.AppendText($"Invalid startTime format, using UtcNow. Parse error: {ex.Message}\n");
+                        }
                         phaseStartTime = DateTime.UtcNow;
                     }
                 }
@@ -805,19 +832,25 @@ namespace WerewolfClient.Forms
                 var game = await firebaseHelper.GetGame(gameId);
                 if (!string.IsNullOrEmpty(game.Status))
                 {
-                    switch (game.Status)
+                    if (IsHandleCreated)
                     {
-                        case "villagers_win":
-                            MessageBox.Show("Phe Dân làng đã thắng!", "Kết thúc game", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            break;
-                        case "werewolves_win":
-                            MessageBox.Show("Phe Sói đã thắng!", "Kết thúc game", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            break;
+                        switch (game.Status)
+                        {
+                            case "villagers_win":
+                                MessageBox.Show("Phe Dân làng đã thắng!", "Kết thúc game", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                break;
+                            case "werewolves_win":
+                                MessageBox.Show("Phe Sói đã thắng!", "Kết thúc game", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                break;
+                        }
                     }
                 }
 
                 // Log
-                richTextBox1.AppendText($"Phase updated to {phase}, startTime={phaseStartTime.ToString("o")}, timer started\n");
+                if (IsHandleCreated)
+                {
+                    richTextBox1.AppendText($"Phase updated to {phase}, startTime={phaseStartTime.ToString("o")}, timer started\n");
+                }
             }
             catch (Exception ex)
             {
@@ -831,7 +864,10 @@ namespace WerewolfClient.Forms
             {
                 int secondsPassed = (int)(DateTime.UtcNow - phaseStartTime).TotalSeconds;
                 int timeLeft = Math.Max(0, phaseDuration - secondsPassed);
-                UpdateTimerLabel(timeLeft);
+                if (IsHandleCreated)
+                {
+                    UpdateTimerLabel(timeLeft);
+                }
                 
                 if (timeLeft <= 0)
                 {
@@ -1090,7 +1126,7 @@ namespace WerewolfClient.Forms
                         SendMessage($"QUIT_ROOM:{roomId}:{CurrentUserName}");
                     }
 
-                    // Clean up resources
+                    // Clean up resources (timers, listeners)
                     if (phaseListener != null)
                     {
                         phaseListener.Dispose();
@@ -1117,34 +1153,103 @@ namespace WerewolfClient.Forms
                         phaseTimer.Dispose();
                     }
 
-                    // Close TCP connection
-                    if (stream != null)
+                    // Signal cancellation to the receiving task
+                    if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
                     {
-                        stream.Close();
-                        stream = null;
-                    }
-                    if (client != null)
-                    {
-                        client.Close();
-                        client = null;
+                        _cancellationTokenSource.Cancel();
                     }
 
-                    // Stop receive thread
-                    if (receiveThread != null && receiveThread.IsAlive)
-                    {
-                        receiveThread.Abort();
-                        receiveThread = null;
-                    }
+                    // No need to await here, rely on FormClosing to await the task
 
-                    // Update the instantiation of LobbyForm to include the required 'email' parameter.  
-                    LobbyForm lobbyForm = new LobbyForm(CurrentUserManager.CurrentUser?.Email);
-                    lobbyForm.Show();
                     this.Close();
                 }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Lỗi khi thoát game: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void InGameForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            // Prevent the form from closing immediately to allow async cleanup
+            e.Cancel = true;
+
+            // Add cleanup logic here
+            // Clean up resources (timers, listeners)
+            if (phaseListener != null)
+            {
+                phaseListener.Dispose();
+                phaseListener = null;
+            }
+            if (timeListener != null)
+            {
+                timeListener.Dispose();
+                timeListener = null;
+            }
+            if (gameStatusListener != null)
+            {
+                gameStatusListener.Dispose();
+                gameStatusListener = null;
+            }
+            if (pollTimer != null)
+            {
+                pollTimer.Stop();
+                pollTimer.Dispose();
+            }
+            if (phaseTimer != null)
+            {
+                phaseTimer.Stop();
+                phaseTimer.Dispose();
+            }
+
+            // Signal cancellation to the receiving task
+            if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
+            {
+                _cancellationTokenSource.Cancel();
+            }
+
+            // Wait for the receiving task to complete after cancellation is signaled
+            if (_receivingTask != null && !_receivingTask.IsCompleted)
+            {
+                try
+                {
+                    // Wait for the task to finish. It should exit after cancellation.
+                    // Add a timeout to prevent indefinite waiting if something goes wrong.
+                    await Task.WhenAny(_receivingTask, Task.Delay(100)); // Wait up to 500 ms
+                }
+                catch { /* Ignore exceptions during await */ }
+            }
+
+            // Clean up network resources after the receiving task has stopped
+            if (stream != null)
+            {
+                stream.Close();
+                stream = null;
+            }
+            if (client != null)
+            {
+                client.Close();
+                client = null;
+            }
+
+            // Dispose CancellationTokenSource
+            if (_cancellationTokenSource != null)
+            {
+                _cancellationTokenSource.Dispose();
+                _cancellationTokenSource = null;
+            }
+
+            // Now that cleanup is done, allow the form to close
+            e.Cancel = false;
+            // Manually close the form again now that cancellation is not pending
+            // Need to use Invoke because this might be called from a background thread due to async void
+            if (IsHandleCreated) // Check before invoking
+            {
+                this.BeginInvoke((MethodInvoker)delegate
+                {
+                    this.Close();
+                });
             }
         }
     }
