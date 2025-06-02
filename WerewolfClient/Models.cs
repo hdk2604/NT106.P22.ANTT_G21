@@ -1,4 +1,12 @@
-﻿using System;
+﻿// E:\Ki 4\Lap trinh mang\Project\NT106.P22.ANTT_G21\WerewolfClient\Models.cs
+// [Content of Models.cs with PhaseDuration and WaitingForHunterShot in Game class]
+// This is the version from the previous correct answer.
+// Make sure it includes:
+// public int? PhaseDuration { get; set; } 
+// public bool WaitingForHunterShot { get; set; } = false;
+// inside the Game class.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -46,7 +54,15 @@ namespace WerewolfClient.Models
         // Thống kê
         public int VotesReceived { get; set; } = 0; // Số phiếu bầu nhận được
         public int KillCount { get; set; } = 0; // Số lần giết người (sói/thợ săn)
-
+        public string VotedForDay { get; set; } // ID người chơi bị vote để treo cổ ban ngày
+        public bool HasVotedToday { get; set; } = false; // Đã bỏ phiếu trong ngày hay chưa
+        public string NightActionTarget { get; set; } // ID mục tiêu cho hành động ban đêm (chung cho các vai trò nếu cần)
+        public string NightActionType { get; set; } // Loại hành động ban đêm (ví dụ: "heal", "poison" cho Witch)
+        public void ResetDayVote()
+        {
+            VotedForDay = null;
+            HasVotedToday = false;
+        }
         public class CheckResult
         {
             public string PlayerId { get; set; }
@@ -96,6 +112,8 @@ namespace WerewolfClient.Models
         public int CurrentPlayerCount { get; set; }
         public string RoomId { get; set; }
         public string PhaseStartTime { get; set; }
+        public int? PhaseDuration { get; set; } 
+        public bool WaitingForHunterShot { get; set; } = false; 
     }
 
     public class GameLog
