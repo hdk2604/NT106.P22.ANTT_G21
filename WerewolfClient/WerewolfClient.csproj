@@ -211,6 +211,9 @@
   <ItemGroup>
     <None Include="Resources\WereWolfIcon-removebg-preview.png" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\DeadIcon.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PreBuildEvent>cmd /c tasklist /FI "IMAGENAME eq WerewolfClient.exe" | find /I "WerewolfClient.exe" &gt;nul &amp;&amp; taskkill /F /IM WerewolfClient.exe &gt;nul || exit /B 0</PreBuildEvent>

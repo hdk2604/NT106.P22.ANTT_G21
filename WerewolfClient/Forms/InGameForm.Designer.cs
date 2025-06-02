@@ -115,10 +115,10 @@ namespace WerewolfClient.Forms
             this.panelRole.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
             this.panelRole.Controls.Add(this.btnQuit);
             this.panelRole.Controls.Add(this.btnRole);
-            this.panelRole.Location = new System.Drawing.Point(10, 100);
+            this.panelRole.Location = new System.Drawing.Point(10, 104);
             this.panelRole.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.panelRole.Name = "panelRole";
-            this.panelRole.Size = new System.Drawing.Size(380, 80);
+            this.panelRole.Size = new System.Drawing.Size(380, 76);
             this.panelRole.TabIndex = 1;
             // 
             // btnQuit
@@ -129,10 +129,10 @@ namespace WerewolfClient.Forms
             this.btnQuit.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnQuit.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnQuit.ForeColor = System.Drawing.Color.White;
-            this.btnQuit.Location = new System.Drawing.Point(255, 4);
+            this.btnQuit.Location = new System.Drawing.Point(205, 4);
             this.btnQuit.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.btnQuit.Name = "btnQuit";
-            this.btnQuit.Size = new System.Drawing.Size(122, 76);
+            this.btnQuit.Size = new System.Drawing.Size(172, 68);
             this.btnQuit.TabIndex = 5;
             this.btnQuit.Text = "QUIT";
             this.btnQuit.UseVisualStyleBackColor = false;
@@ -142,11 +142,11 @@ namespace WerewolfClient.Forms
             // 
             this.btnRole.BackColor = System.Drawing.Color.Firebrick;
             this.btnRole.FlatAppearance.BorderSize = 0;
-            this.btnRole.Font = new System.Drawing.Font("Georgia", 24F, System.Drawing.FontStyle.Bold);
+            this.btnRole.Font = new System.Drawing.Font("Georgia", 20F, System.Drawing.FontStyle.Bold);
             this.btnRole.ForeColor = System.Drawing.Color.White;
-            this.btnRole.Location = new System.Drawing.Point(0, 3);
+            this.btnRole.Location = new System.Drawing.Point(3, 3);
             this.btnRole.Name = "btnRole";
-            this.btnRole.Size = new System.Drawing.Size(249, 77);
+            this.btnRole.Size = new System.Drawing.Size(196, 74);
             this.btnRole.TabIndex = 0;
             this.btnRole.Text = "Role";
             this.btnRole.UseVisualStyleBackColor = false;
@@ -159,7 +159,7 @@ namespace WerewolfClient.Forms
             this.panelTopLeft.Location = new System.Drawing.Point(10, 10);
             this.panelTopLeft.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.panelTopLeft.Name = "panelTopLeft";
-            this.panelTopLeft.Size = new System.Drawing.Size(380, 60);
+            this.panelTopLeft.Size = new System.Drawing.Size(387, 73);
             this.panelTopLeft.TabIndex = 0;
             // 
             // labelTimer
@@ -167,7 +167,7 @@ namespace WerewolfClient.Forms
             this.labelTimer.AutoSize = true;
             this.labelTimer.Font = new System.Drawing.Font("Segoe UI", 14F, System.Drawing.FontStyle.Bold);
             this.labelTimer.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(0)))), ((int)(((byte)(122)))), ((int)(((byte)(204)))));
-            this.labelTimer.Location = new System.Drawing.Point(160, 15);
+            this.labelTimer.Location = new System.Drawing.Point(150, 24);
             this.labelTimer.Name = "labelTimer";
             this.labelTimer.Size = new System.Drawing.Size(89, 38);
             this.labelTimer.TabIndex = 2;
