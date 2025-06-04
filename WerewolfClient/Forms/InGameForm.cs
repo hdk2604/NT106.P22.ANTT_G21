@@ -76,6 +76,9 @@ namespace WerewolfClient.Forms
             tableLayoutPanel1.Click += new System.EventHandler(this.TableLayoutPanel1_Click);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.InGameForm_FormClosing);
             ConnectToServer(existingClient);
+            this.WindowState = FormWindowState.Maximized;
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+
         }
 
         public InGameForm() : this(new List<string>()) { }
@@ -96,11 +99,21 @@ namespace WerewolfClient.Forms
             this.actionButton.Cursor = System.Windows.Forms.Cursors.Hand;
             this.Controls.Add(this.actionButton);
             this.actionButton.BringToFront();
+            // co giãn fit với màn hình
+            panelLeft.Dock = DockStyle.Left;
+            tableLayoutPanel1.Dock = DockStyle.Fill;
+            panelLoadingOverlay.Dock = DockStyle.Fill;
+            richTextBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            richTextBox2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+
+
 
             panelLoadingOverlay.Location = tableLayoutPanel1.Location;
             panelLoadingOverlay.Size = tableLayoutPanel1.Size;
             panelLoadingOverlay.BringToFront();
             panelLoadingOverlay.Visible = true;
+            this.Resize += new EventHandler(InGameForm_Resize);
 
             panelTopLeft.BackColor = Color.FromArgb(100, 0, 0, 0);
             panelRole.BackColor = Color.FromArgb(100, 0, 0, 0);
@@ -156,8 +169,8 @@ namespace WerewolfClient.Forms
 
                     if (IsHandleCreated) labelLoading.Text = "Đang đồng bộ trạng thái trò chơi...";
                     SetupFirebaseListeners();
-                    await LoadCurrentPhaseFromFirebase(); 
-
+                    await LoadCurrentPhaseFromFirebase();
+                  
                     // Chỉ ẩn panel loading nếu game CHƯA kết thúc và form còn tồn tại
                     if (!isGameReallyOver && IsHandleCreated && panelLoadingOverlay != null)
                     {
@@ -219,6 +232,13 @@ namespace WerewolfClient.Forms
                 SetPlaceholder();
             }
         }
+        private void InGameForm_Resize(object sender, EventArgs e)
+        {
+            // Cập nhật vị trí của richTextBox2 và button Gửi khi resize
+            richTextBox2.Location = new Point(10, panelLeft.Height - 60);
+            button1.Location = new Point(panelLeft.Width - 80, panelLeft.Height - 60);
+        }
+
         private void button1_Click(object sender, EventArgs e)
         {
             try
