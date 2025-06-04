@@ -17,12 +17,23 @@ namespace WerewolfClient.Forms
         {
             InitializeComponent();
             txtPassword.UseSystemPasswordChar = true;
+            panelLogin.Anchor = AnchorStyles.None;
 
+            this.WindowState = FormWindowState.Maximized;
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.Resize += LoginForm_Resize;
         }
-
+        private void LoginForm_Resize(object sender, EventArgs e)
+        {
+            panelLogin.Location = new Point(
+         (this.ClientSize.Width - panelLogin.Width) / 2,
+         (this.ClientSize.Height - panelLogin.Height) / 2
+     );
+        }
         private void LoginForm_Load(object sender, EventArgs e)
         {
-
+            this.Resize += LoginForm_Resize;
+            this.FormBorderStyle = FormBorderStyle.None;
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)

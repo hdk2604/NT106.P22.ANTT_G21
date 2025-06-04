@@ -18,13 +18,34 @@ namespace WerewolfClient.Forms
     {
         private string _email; // Renamed the private field to avoid ambiguity  
         private FirebaseHelper _firebaseHelper;
+        private void LobbyForm_Resize(object sender, EventArgs e)
+        {
+            int margin = 50;
 
+            // Căn chữ WEREWOLF sát phải nhưng không bị tràn
+            int gameNameX = this.ClientSize.Width - gameName.Width - margin;
+            gameName.Location = new Point(gameNameX, gameName.Location.Y);
+
+            // Tính vị trí nút sao cho nằm giữa dưới chữ WEREWOLF
+            int centerX = gameName.Location.X + (gameName.Width - btnCreateRoom.Width) / 2;
+
+            btnCreateRoom.Location = new Point(centerX, btnCreateRoom.Location.Y);
+            btnFindRoom.Location = new Point(centerX, btnFindRoom.Location.Y);
+            btnRoles.Location = new Point(centerX, btnRoles.Location.Y);
+            btnSetting.Location = new Point(centerX, btnSetting.Location.Y);
+        }
         public LobbyForm(string email)
         {
             InitializeComponent();
             this._email = email; // Updated to use the renamed private field  
             _firebaseHelper = new FirebaseHelper();
-            playerName.Text = CurrentUserManager.CurrentUser.Username; 
+            playerName.Text = CurrentUserManager.CurrentUser.Username;
+            this.WindowState = FormWindowState.Maximized;
+            this.FormBorderStyle = FormBorderStyle.None;
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.Resize += LobbyForm_Resize;
+            this.WindowState = FormWindowState.Maximized;
+
         }
 
         private void btnRoles_Click(object sender, EventArgs e)

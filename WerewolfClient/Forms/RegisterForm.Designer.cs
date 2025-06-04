@@ -1,9 +1,12 @@
-﻿namespace WerewolfClient.Forms
+﻿using System.Windows.Forms;
+
+namespace WerewolfClient.Forms
 {
     partial class RegisterForm
     {
         private void InitializeComponent()
         {
+
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.panelRegister = new System.Windows.Forms.Panel();
             this.lblTitle = new System.Windows.Forms.Label();
@@ -22,6 +25,8 @@
             this.btnMinimize = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panelRegister.SuspendLayout();
+            this.panelRegister.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+
             this.SuspendLayout();
             // 
             // pictureBox1

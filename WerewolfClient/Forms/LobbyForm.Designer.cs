@@ -21,6 +21,12 @@ namespace WerewolfClient.Forms
             this.panel2 = new System.Windows.Forms.Panel();
             this.lblVersion = new System.Windows.Forms.Label();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
+            this.btnCreateRoom.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            this.btnFindRoom.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            this.btnRoles.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            this.btnSetting.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            this.gameName.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
@@ -209,7 +215,6 @@ namespace WerewolfClient.Forms
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(15)))), ((int)(((byte)(15)))), ((int)(((byte)(15)))));
             this.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("$this.BackgroundImage")));
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.ClientSize = new System.Drawing.Size(1620, 1000);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.btnRoles);

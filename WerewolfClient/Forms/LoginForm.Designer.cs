@@ -1,4 +1,6 @@
-﻿namespace WerewolfClient.Forms
+﻿using System.Windows.Forms;
+
+namespace WerewolfClient.Forms
 {
     partial class LoginForm
     {
@@ -20,6 +22,8 @@
             this.btnClose = new System.Windows.Forms.Button();
             this.btnMinimize = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            this.panelLogin.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+
             this.panelLogin.SuspendLayout();
             this.SuspendLayout();
             // 
