@@ -65,7 +65,7 @@ namespace WerewolfClient.Forms
         private const int UpdatePlayersDisplayDebounceTimeMs = 300;
         private IDisposable firebaseGameLogListener;
         private int currentDay = 1;
-        private bool isGameReallyOver = false; 
+        private bool isGameReallyOver = false;
 
         public InGameForm(List<string> playerNamesParam, TcpClient existingClient = null)
         {
@@ -75,7 +75,7 @@ namespace WerewolfClient.Forms
             Load += new System.EventHandler(this.Form1_Load);
             tableLayoutPanel1.Click += new System.EventHandler(this.TableLayoutPanel1_Click);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.InGameForm_FormClosing);
-            ConnectToServer(existingClient);
+            // ConnectToServer(existingClient);
             this.WindowState = FormWindowState.Maximized;
             this.AutoScaleMode = AutoScaleMode.Dpi;
 
@@ -170,7 +170,7 @@ namespace WerewolfClient.Forms
                     if (IsHandleCreated) labelLoading.Text = "Đang đồng bộ trạng thái trò chơi...";
                     SetupFirebaseListeners();
                     await LoadCurrentPhaseFromFirebase();
-                  
+
                     // Chỉ ẩn panel loading nếu game CHƯA kết thúc và form còn tồn tại
                     if (!isGameReallyOver && IsHandleCreated && panelLoadingOverlay != null)
                     {
@@ -188,7 +188,7 @@ namespace WerewolfClient.Forms
                     }
                 }
             }
-            else if (isGameDataLoaded) 
+            else if (isGameDataLoaded)
             {
                 await UpdatePlayerDisplayAsync();
                 // Chỉ ẩn panel loading nếu game CHƯA kết thúc và form còn tồn tại
@@ -393,10 +393,12 @@ namespace WerewolfClient.Forms
                             string msgRoomId = parts[1];
                             string sender = parts[2];
                             string msg = string.Join(":", parts.Skip(3));
+                            Console.WriteLine($"[CLIENT] Nhận CHAT_MESSAGE từ server - roomId={parts[1]}, sender={parts[2]}, msg={string.Join(":", parts.Skip(3))}");
+                            Console.WriteLine($"[CLIENT] Local chatRoomId = {this.chatRoomId}");
+
                             if (msgRoomId == this.chatRoomId)
-                            {
                                 AddChatMessage(sender, msg);
-                            }
+
                         }
                         break;
                     case "PLAYER_JOINED":
@@ -416,7 +418,7 @@ namespace WerewolfClient.Forms
                         }
                         break;
                     case "PLAYER_LIST":
-                        
+
                         break;
                 }
             }
@@ -463,17 +465,17 @@ namespace WerewolfClient.Forms
 
         private void OnPlayerJoined(string playerName)
         {
-            
+
         }
 
         private void OnPlayerLeft(string playerName)
         {
-            
+
         }
 
         private void DisplayGameLog(GameLog logEntry)
         {
-            if (isGameReallyOver) 
+            if (isGameReallyOver)
             {
                 Console.WriteLine($"DIAGNOSTIC InGameForm: DisplayGameLog - Game is over. Suppressing log: '{logEntry.Message}'");
                 return;
@@ -487,7 +489,7 @@ namespace WerewolfClient.Forms
                 "seer_action_detail",
                 "witch_action_detail",
                 "bodyguard_action_detail",
-                "game_end" 
+                "game_end"
             };
 
             if (logEntry.Phase != null && phasesToIgnoreInChat.Contains(logEntry.Phase.ToLower()))
@@ -673,11 +675,11 @@ namespace WerewolfClient.Forms
             this.chatRoomId = roomIdParam;
 
             Console.WriteLine($"DIAGNOSTIC InGameForm: SetFirebaseInfo called. UserID: {userId}, GameID: {gameIdParam}, IsHost: {isHostParam}, RoomID: {roomIdParam}");
-
-            if (isServerConnected && tcpClient != null && tcpClient.Connected && !string.IsNullOrEmpty(chatRoomId) && !string.IsNullOrEmpty(CurrentUserName))
+            if (!isServerConnected)
             {
-                // SendMessage($"JOIN_ROOM:{chatRoomId}:{CurrentUserName}"); // Đã gửi ở ConnectToServer
+                ConnectToServer();  // sẽ tự gửi JOIN_ROOM nếu chatRoomId và userName đã có
             }
+
         }
 
         private async Task LoadCurrentUserRole()
@@ -790,7 +792,7 @@ namespace WerewolfClient.Forms
                 if (firebasePlayersListener == null)
                 {
                     firebasePlayersListener = firebase.Child("games").Child(gameId).Child("players")
-                        .AsObservable<Player>() 
+                        .AsObservable<Player>()
                         .Subscribe(
                             playerEventOrSnapshot =>
                             {
@@ -811,7 +813,7 @@ namespace WerewolfClient.Forms
                     firebaseGameLogListener = firebase
                         .Child("gameLogs")
                         .Child(gameId)
-                        .AsObservable<GameLog>() 
+                        .AsObservable<GameLog>()
                         .Subscribe(
                             logEvent =>
                             {
@@ -1079,7 +1081,7 @@ namespace WerewolfClient.Forms
                 phaseTimerUi.Stop();
                 Console.WriteLine($"DIAGNOSTIC InGameForm: Timer expired. User: {CurrentUserName}, isHost: {isHost}, Current Client Phase: {currentPhaseClient}");
 
-                if (isHost && !isGameReallyOver) 
+                if (isHost && !isGameReallyOver)
                 {
                     var fb = new FirebaseHelper();
                     var game = await fb.GetGame(gameId);
@@ -1095,7 +1097,7 @@ namespace WerewolfClient.Forms
                         else
                         {
                             Console.WriteLine($"DIAGNOSTIC InGameForm: Host ({CurrentUserName}) - Game already ended with status: {game.Status}. No phase change initiated from timer.");
-                            ProcessGameStatusUpdate(game.Status); 
+                            ProcessGameStatusUpdate(game.Status);
                         }
                     }
                     else
@@ -1120,7 +1122,7 @@ namespace WerewolfClient.Forms
                 return;
             }
 
-            if (isGameReallyOver) 
+            if (isGameReallyOver)
             {
                 if (labelTimer.Text != "GAME KẾT THÚC") labelTimer.Text = "GAME KẾT THÚC";
                 return;
@@ -1150,7 +1152,7 @@ namespace WerewolfClient.Forms
                 case GamePhaseClient.DayVote:
                     phaseText = $"Bỏ phiếu Sáng {this.currentDay + 1}: ";
                     break;
-                case GamePhaseClient.Unknown: 
+                case GamePhaseClient.Unknown:
                     if (!isGameDataLoaded || string.IsNullOrEmpty(gameId) || lastFirebasePhaseRaw == null)
                     {
                         if (labelTimer.Text != "Đang tải...") labelTimer.Text = "Đang tải...";
@@ -1364,9 +1366,9 @@ namespace WerewolfClient.Forms
                     Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Day vote results processed.");
                 }
 
-                if (isGameReallyOver) 
+                if (isGameReallyOver)
                 {
-                    if (IsHandleCreated && panelLoadingOverlay != null) panelLoadingOverlay.Visible = true; 
+                    if (IsHandleCreated && panelLoadingOverlay != null) panelLoadingOverlay.Visible = true;
                     return;
                 }
 
@@ -1475,8 +1477,8 @@ namespace WerewolfClient.Forms
                 {
                     await Task.WhenAny(_receivingTask, Task.Delay(200));
                 }
-                catch (ObjectDisposedException) {}
-                catch (Exception) {}
+                catch (ObjectDisposedException) { }
+                catch (Exception) { }
             }
             _cancellationTokenSource?.Dispose(); _cancellationTokenSource = null;
 
@@ -1500,13 +1502,13 @@ namespace WerewolfClient.Forms
                 this.BeginInvoke((MethodInvoker)delegate {
                     if (!IsDisposed)
                     {
-                        base.Close(); 
+                        base.Close();
                     }
                 });
             }
             else if (!IsDisposed)
             {
-                base.Close(); 
+                base.Close();
             }
         }
 
