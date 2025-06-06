@@ -308,7 +308,7 @@ namespace WerewolfClient.Forms
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "GameRoomForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            //this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Werewolf - Game Room";
             this.pnlHeader.ResumeLayout(false);
             this.pnlHeader.PerformLayout();

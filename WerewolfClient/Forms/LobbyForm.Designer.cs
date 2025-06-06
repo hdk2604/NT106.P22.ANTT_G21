@@ -21,12 +21,6 @@ namespace WerewolfClient.Forms
             this.panel2 = new System.Windows.Forms.Panel();
             this.lblVersion = new System.Windows.Forms.Label();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
-            this.btnCreateRoom.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            this.btnFindRoom.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            this.btnRoles.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            this.btnSetting.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            this.gameName.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
@@ -34,6 +28,7 @@ namespace WerewolfClient.Forms
             // 
             // btnCreateRoom
             // 
+            this.btnCreateRoom.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCreateRoom.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnCreateRoom.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnCreateRoom.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
@@ -43,7 +38,7 @@ namespace WerewolfClient.Forms
             this.btnCreateRoom.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnCreateRoom.Font = new System.Drawing.Font("Palatino Linotype", 20F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnCreateRoom.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.btnCreateRoom.Location = new System.Drawing.Point(1113, 300);
+            this.btnCreateRoom.Location = new System.Drawing.Point(876, 265);
             this.btnCreateRoom.Name = "btnCreateRoom";
             this.btnCreateRoom.Size = new System.Drawing.Size(375, 92);
             this.btnCreateRoom.TabIndex = 0;
@@ -53,6 +48,7 @@ namespace WerewolfClient.Forms
             // 
             // btnFindRoom
             // 
+            this.btnFindRoom.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnFindRoom.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnFindRoom.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnFindRoom.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
@@ -62,7 +58,7 @@ namespace WerewolfClient.Forms
             this.btnFindRoom.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnFindRoom.Font = new System.Drawing.Font("Palatino Linotype", 20F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnFindRoom.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.btnFindRoom.Location = new System.Drawing.Point(1113, 423);
+            this.btnFindRoom.Location = new System.Drawing.Point(876, 388);
             this.btnFindRoom.Name = "btnFindRoom";
             this.btnFindRoom.Size = new System.Drawing.Size(375, 92);
             this.btnFindRoom.TabIndex = 0;
@@ -72,11 +68,12 @@ namespace WerewolfClient.Forms
             // 
             // gameName
             // 
+            this.gameName.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.gameName.AutoSize = true;
             this.gameName.BackColor = System.Drawing.Color.Transparent;
             this.gameName.Font = new System.Drawing.Font("Palatino Linotype", 48F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.gameName.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.gameName.Location = new System.Drawing.Point(983, 147);
+            this.gameName.Location = new System.Drawing.Point(746, 112);
             this.gameName.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.gameName.Name = "gameName";
             this.gameName.Size = new System.Drawing.Size(624, 129);
@@ -85,6 +82,7 @@ namespace WerewolfClient.Forms
             // 
             // btnSetting
             // 
+            this.btnSetting.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSetting.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnSetting.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnSetting.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
@@ -94,7 +92,7 @@ namespace WerewolfClient.Forms
             this.btnSetting.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSetting.Font = new System.Drawing.Font("Palatino Linotype", 20F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSetting.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.btnSetting.Location = new System.Drawing.Point(1113, 669);
+            this.btnSetting.Location = new System.Drawing.Point(876, 634);
             this.btnSetting.Name = "btnSetting";
             this.btnSetting.Size = new System.Drawing.Size(375, 92);
             this.btnSetting.TabIndex = 2;
@@ -103,6 +101,7 @@ namespace WerewolfClient.Forms
             // 
             // btnRoles
             // 
+            this.btnRoles.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnRoles.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnRoles.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnRoles.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
@@ -112,7 +111,7 @@ namespace WerewolfClient.Forms
             this.btnRoles.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnRoles.Font = new System.Drawing.Font("Palatino Linotype", 20F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnRoles.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.btnRoles.Location = new System.Drawing.Point(1113, 546);
+            this.btnRoles.Location = new System.Drawing.Point(876, 511);
             this.btnRoles.Name = "btnRoles";
             this.btnRoles.Size = new System.Drawing.Size(375, 92);
             this.btnRoles.TabIndex = 3;
@@ -215,6 +214,7 @@ namespace WerewolfClient.Forms
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(15)))), ((int)(((byte)(15)))), ((int)(((byte)(15)))));
             this.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("$this.BackgroundImage")));
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.ClientSize = new System.Drawing.Size(1400, 800);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.btnRoles);
@@ -227,7 +227,6 @@ namespace WerewolfClient.Forms
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
             this.Name = "LobbyForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Werewolf - Lobby";
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();

@@ -40,11 +40,10 @@ namespace WerewolfClient.Forms
             this._email = email; // Updated to use the renamed private field  
             _firebaseHelper = new FirebaseHelper();
             playerName.Text = CurrentUserManager.CurrentUser.Username;
-            this.WindowState = FormWindowState.Maximized;
-            this.FormBorderStyle = FormBorderStyle.None;
-            this.StartPosition = FormStartPosition.CenterScreen;
+            //this.FormBorderStyle = FormBorderStyle.None;
+            //this.StartPosition = FormStartPosition.CenterScreen;
             this.Resize += LobbyForm_Resize;
-            this.WindowState = FormWindowState.Maximized;
+            //this.WindowState = FormWindowState.Maximized;
 
         }
 

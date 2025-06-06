@@ -31,8 +31,7 @@ namespace WerewolfClient.Forms
         private void RegisterForm_Load(object sender, EventArgs e)
         {
             this.Resize += RegisterForm_Resize;
-            this.FormBorderStyle = FormBorderStyle.None;
-            this.Bounds = Screen.PrimaryScreen.Bounds;
+            //this.Bounds = Screen.PrimaryScreen.Bounds;
 
         }
 
@@ -73,19 +72,6 @@ namespace WerewolfClient.Forms
         private void lblLoginPrompt_Click(object sender, EventArgs e)
         {
 
-        }
-
-        private void btnClose_Click(object sender, EventArgs e)
-        {
-            // Đóng ứng dụng
-            Application.Exit();
-
-        }
-
-        private void btnMinimize_Click(object sender, EventArgs e)
-        {
-            // Thu nhỏ cửa sổ xuống thanh taskbar
-            this.WindowState = FormWindowState.Minimized;
         }
     }
 }

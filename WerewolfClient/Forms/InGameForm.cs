@@ -76,7 +76,7 @@ namespace WerewolfClient.Forms
             tableLayoutPanel1.Click += new System.EventHandler(this.TableLayoutPanel1_Click);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.InGameForm_FormClosing);
             // ConnectToServer(existingClient);
-            this.WindowState = FormWindowState.Maximized;
+            //this.WindowState = FormWindowState.Maximized;
             this.AutoScaleMode = AutoScaleMode.Dpi;
 
         }
@@ -100,12 +100,12 @@ namespace WerewolfClient.Forms
             this.Controls.Add(this.actionButton);
             this.actionButton.BringToFront();
             // co giãn fit với màn hình
-            panelLeft.Dock = DockStyle.Left;
-            tableLayoutPanel1.Dock = DockStyle.Fill;
-            panelLoadingOverlay.Dock = DockStyle.Fill;
-            richTextBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            richTextBox2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            //panelLeft.Dock = DockStyle.Left;
+            //tableLayoutPanel1.Dock = DockStyle.Fill;
+            //panelLoadingOverlay.Dock = DockStyle.Fill;
+            //richTextBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            //richTextBox2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            //button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 
 
 
@@ -1329,8 +1329,10 @@ namespace WerewolfClient.Forms
 
         private async Task NextPhase_Host()
         {
-            if (this.IsDisposed || !this.IsHandleCreated || isGameReallyOver) return; // Không làm gì nếu game đã kết thúc
+            // Giữ các kiểm tra ban đầu
+            if (this.IsDisposed || !this.IsHandleCreated || isGameReallyOver) return;
             Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() called by Host ({CurrentUserName}).");
+
             try
             {
                 var firebaseHelper = new FirebaseHelper();
@@ -1341,43 +1343,95 @@ namespace WerewolfClient.Forms
                     if (IsHandleCreated) MessageBox.Show("Không thể lấy dữ liệu game trong NextPhase_Host.", "Lỗi (Host)", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
+
+                // Kiểm tra xem game có kết thúc từ trước không
                 if (game.Status == "villagers_win" || game.Status == "werewolves_win" || game.Status == "ended")
                 {
                     Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Game already ended with status: {game.Status}.");
-                    ProcessGameStatusUpdate(game.Status);
+                    ProcessGameStatusUpdate(game.Status); // Đảm bảo UI được cập nhật
                     return;
                 }
 
                 string currentPhaseStrFromFirebase = game.CurrentPhase;
                 Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Current phase from Firebase is '{currentPhaseStrFromFirebase}'.");
 
+                // Hiển thị màn hình loading trong khi xử lý
+                if (IsHandleCreated && panelLoadingOverlay != null && !isGameReallyOver)
+                {
+                    if (panelLoadingOverlay.InvokeRequired)
+                    {
+                        panelLoadingOverlay.Invoke(new Action(() => {
+                            labelLoading.Text = "Đang xử lý kết quả...";
+                            panelLoadingOverlay.Visible = true;
+                        }));
+                    }
+                    else
+                    {
+                        labelLoading.Text = "Đang xử lý kết quả...";
+                        panelLoadingOverlay.Visible = true;
+                    }
+                }
+
+
+                // Xử lý kết quả của pha hiện tại
                 if (currentPhaseStrFromFirebase.ToLower() == "night")
                 {
-                    if (IsHandleCreated && panelLoadingOverlay != null && !isGameReallyOver) { labelLoading.Text = "Đang xử lý kết quả đêm..."; panelLoadingOverlay.Visible = true; }
                     Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Processing night results...");
                     await firebaseHelper.ProcessNightResults(gameId);
                     Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Night results processed.");
                 }
                 else if (currentPhaseStrFromFirebase.ToLower() == "day_vote")
                 {
-                    if (IsHandleCreated && panelLoadingOverlay != null && !isGameReallyOver) { labelLoading.Text = "Đang xử lý kết quả bỏ phiếu..."; panelLoadingOverlay.Visible = true; }
                     Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Processing day vote results...");
                     await firebaseHelper.ProcessDayVoteResults(gameId);
                     Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Day vote results processed.");
                 }
 
-                if (isGameReallyOver)
+                // *** BƯỚC SỬA LỖI QUAN TRỌNG ***
+                // Lấy lại trạng thái game MỚI NHẤT sau khi đã xử lý kết quả ở trên.
+                var updatedGame = await firebaseHelper.GetGame(gameId);
+                if (updatedGame != null && (updatedGame.Status == "villagers_win" || updatedGame.Status == "werewolves_win" || updatedGame.Status == "ended"))
                 {
-                    if (IsHandleCreated && panelLoadingOverlay != null) panelLoadingOverlay.Visible = true;
-                    return;
+                    // Nếu game đã kết thúc, hãy dừng lại ngay tại đây và không chuyển phase nữa.
+                    Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Game ended after processing results (Status: {updatedGame.Status}). Halting phase transition.");
+
+                    // Cập nhật UI một lần nữa cho chắc chắn và giữ màn hình loading với thông báo kết thúc
+                    ProcessGameStatusUpdate(updatedGame.Status);
+
+                    if (IsHandleCreated && panelLoadingOverlay != null)
+                    {
+                        string endMessage = updatedGame.Status == "villagers_win" ? "Phe Dân làng đã thắng!" : "Phe Sói đã thắng!";
+                        string overlayMessage = $"TRÒ CHƠI KẾT THÚC\n{endMessage}";
+                        if (labelLoading.InvokeRequired)
+                        {
+                            labelLoading.Invoke(new Action(() => labelLoading.Text = overlayMessage));
+                        }
+                        else
+                        {
+                            labelLoading.Text = overlayMessage;
+                        }
+                    }
+                    return; // Dừng thực thi, không gọi NextPhase
                 }
 
 
+                // Chỉ gọi NextPhase nếu game vẫn còn tiếp diễn
                 Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Calling firebaseHelper.NextPhase with current Firebase phase: {currentPhaseStrFromFirebase}.");
-                string gameEndStatus = await firebaseHelper.NextPhase(gameId, currentPhaseStrFromFirebase);
-                Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - firebaseHelper.NextPhase call completed. Game end status: '{gameEndStatus ?? "null"}'");
+                await firebaseHelper.NextPhase(gameId, currentPhaseStrFromFirebase);
+                Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - firebaseHelper.NextPhase call completed.");
 
-                if (IsHandleCreated && panelLoadingOverlay != null && !isGameReallyOver) panelLoadingOverlay.Visible = false;
+                // Ẩn màn hình loading nếu game chưa kết thúc
+                if (IsHandleCreated && panelLoadingOverlay != null && !isGameReallyOver)
+                {
+                    if (panelLoadingOverlay.InvokeRequired)
+                    {
+                        panelLoadingOverlay.Invoke(new Action(() => panelLoadingOverlay.Visible = false));
+                    }
+                    else
+                    {
+                        panelLoadingOverlay.Visible = false;
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -1389,6 +1443,7 @@ namespace WerewolfClient.Forms
                 }
             }
         }
+
 
         private void TableLayoutPanel1_Click(object sender, EventArgs e)
         {

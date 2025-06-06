@@ -19,8 +19,6 @@ namespace WerewolfClient.Forms
             txtPassword.UseSystemPasswordChar = true;
             panelLogin.Anchor = AnchorStyles.None;
 
-            this.WindowState = FormWindowState.Maximized;
-            this.FormBorderStyle = FormBorderStyle.None;
             this.Resize += LoginForm_Resize;
         }
         private void LoginForm_Resize(object sender, EventArgs e)
@@ -33,7 +31,6 @@ namespace WerewolfClient.Forms
         private void LoginForm_Load(object sender, EventArgs e)
         {
             this.Resize += LoginForm_Resize;
-            this.FormBorderStyle = FormBorderStyle.None;
         }
 
         private void pictureBox1_Click(object sender, EventArgs e)
