@@ -34,28 +34,31 @@ namespace WerewolfServer
             byte[] buffer = new byte[4096];
             int bytesRead;
             Player player = null;
+            StringBuilder receiveBuffer = new StringBuilder();
 
             try
             {
                 while (client.Connected)
                 {
-                    if (!stream.DataAvailable)
-                    {
-                        Thread.Sleep(100);
-                        continue;
-                    }
 
                     bytesRead = stream.Read(buffer, 0, buffer.Length);
                     if (bytesRead > 0)
                     {
-                        string message = Encoding.UTF8.GetString(buffer, 0, bytesRead).Trim();
-                        Console.WriteLine($"Message: {message}");
+                        receiveBuffer.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
 
-                        string[] messages = message.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (string msg in messages)
+                        string content = receiveBuffer.ToString();
+                        int newlineIndex;
+                        while ((newlineIndex = content.IndexOf('\n')) >= 0)
                         {
-                            ProcessClientMessage(client, msg, ref player);
+                            string completeMessage = content.Substring(0, newlineIndex).Trim();
+                            content = content.Substring(newlineIndex + 1);
+
+                            if (!string.IsNullOrEmpty(completeMessage))
+                            {
+                                ProcessClientMessage(client, completeMessage, ref player);
+                            }
                         }
+                        receiveBuffer.Clear().Append(content); // giữ lại phần còn lại chưa đủ
                     }
                     else
                     {
@@ -87,14 +90,15 @@ namespace WerewolfServer
             {
                 switch (command)
                 {
-                     case "CREATE_ROOM":
+                    case "CREATE_ROOM":
                         Console.WriteLine("[SERVER] Bat dau tao phong...");
                         if (parts.Length >= 3)
                         {
                             string creatorName = parts[2];
                             string roomId = Guid.NewGuid().ToString().Substring(0, 6).ToUpper();
                             Console.WriteLine($"[SERVER] roomId={roomId}, creatorName={creatorName}");
-                            try {
+                            try
+                            {
                                 _rooms[roomId] = new Room(roomId);
                                 Console.WriteLine("[SERVER] Da tao room object");
                                 player = new Player(client, creatorName);
@@ -109,7 +113,9 @@ namespace WerewolfServer
                                 _rooms[roomId].AddPlayer(player);
                                 Console.WriteLine("[SERVER] Da add player vào room");
                                 response = "";
-                            } catch (Exception ex) {
+                            }
+                            catch (Exception ex)
+                            {
                                 Console.WriteLine($"[SERVER] Loi khi tao phong: {ex.Message}\n{ex.StackTrace}");
                             }
                         }
@@ -138,11 +144,12 @@ namespace WerewolfServer
                         {
                             string roomId = parts[1];
                             string sender = parts[2];
-                            string msg = parts[3];
+                            string msg = string.Join(":", parts.Skip(3)); // hỗ trợ dấu ":" trong tin nhắn
+
                             if (_rooms.ContainsKey(roomId))
-                            {   
+                            {
                                 Console.WriteLine($"[SERVER] Gui toi {roomId}: {sender}:{msg}");
-                                _rooms[roomId].Broadcast($"CHAT_MESSAGE:{sender}:{msg}", "");
+                                _rooms[roomId].Broadcast($"CHAT_MESSAGE:{roomId}:{sender}:{msg}", "");
                             }
                         }
                         break;
@@ -177,39 +184,39 @@ namespace WerewolfServer
         }
 
         public class Room
-    {
-        public string Id { get; }
-        public List<Player> Players { get; } = new List<Player>();
-
-        public Room(string id)
         {
-            Id = id;
-        }
+            public string Id { get; }
+            public List<Player> Players { get; } = new List<Player>();
 
-        public void AddPlayer(Player player)
-        {
-            player.CurrentRoom = this;
-            Players.Add(player);
-            Broadcast($"PLAYER_JOINED:{player.Name}", "");
-            Broadcast($"PLAYER_LIST:{string.Join(",", GetPlayerNames())}", "");
-        }
-
-        public void RemovePlayer(string playerName)
-        {
-            var player = Players.Find(p => p.Name == playerName);
-            if (player != null)
+            public Room(string id)
             {
-                Players.Remove(player);
-                Broadcast($"PLAYER_LEFT:{playerName}", "");
+                Id = id;
+            }
+
+            public void AddPlayer(Player player)
+            {
+                player.CurrentRoom = this;
+                Players.Add(player);
+                Broadcast($"PLAYER_JOINED:{player.Name}", "");
                 Broadcast($"PLAYER_LIST:{string.Join(",", GetPlayerNames())}", "");
             }
-             if (Players.Count == 0)
-                {
-                        GameServer.RemoveRoom(Id);
-                }
-        }
 
-       public void Broadcast(string message, string excludePlayerName)
+            public void RemovePlayer(string playerName)
+            {
+                var player = Players.Find(p => p.Name == playerName);
+                if (player != null)
+                {
+                    Players.Remove(player);
+                    Broadcast($"PLAYER_LEFT:{playerName}", "");
+                    Broadcast($"PLAYER_LIST:{string.Join(",", GetPlayerNames())}", "");
+                }
+                if (Players.Count == 0)
+                {
+                    GameServer.RemoveRoom(Id);
+                }
+            }
+
+            public void Broadcast(string message, string excludePlayerName)
             {
                 var disconnectedPlayers = new List<Player>();
                 foreach (var player in Players)
@@ -242,13 +249,13 @@ namespace WerewolfServer
                 }
             }
 
-        public List<string> GetPlayerNames()
-        {
-            return Players.ConvertAll(p => p.Name);
+            public List<string> GetPlayerNames()
+            {
+                return Players.ConvertAll(p => p.Name);
+            }
         }
-    }
 
-     public class Player
+        public class Player
         {
             public TcpClient Client { get; }
             public string Name { get; }
