@@ -183,6 +183,16 @@ namespace WerewolfClient.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap WereWolfWin {
+            get {
+                object obj = ResourceManager.GetObject("WereWolfWin", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap WitchIcon {
             get {
                 object obj = ResourceManager.GetObject("WitchIcon", resourceCulture);

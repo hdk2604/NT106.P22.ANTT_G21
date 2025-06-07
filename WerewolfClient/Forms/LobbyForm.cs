@@ -95,6 +95,10 @@ namespace WerewolfClient.Forms
                         IsReady = true
                     };
                     await _firebaseHelper.AddPlayer(firebaseRoomId, player);
+                    // Cập nhật CurrentPlayerCount = 1 cho host
+                    await _firebaseHelper.firebase
+    .Child($"games/{firebaseRoomId}/CurrentPlayerCount")
+    .PutAsync(1.ToString());
 
                     // 6. Hiện GameRoomForm (truyền roomId từ server và client đã mở)
                     this.Hide();

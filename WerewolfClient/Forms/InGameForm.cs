@@ -24,6 +24,8 @@ namespace WerewolfClient.Forms
         private string currentUserId = null;
         private System.Windows.Forms.Timer pollTimer;
         private string currentGameId = null;
+        private string roomCode = null;
+        private TcpClient client = null;
         private Dictionary<string, Image> roleIcons = new Dictionary<string, Image>
         {
             { "werewolf", Properties.Resources.WereWolfIcon },
@@ -66,6 +68,10 @@ namespace WerewolfClient.Forms
         private IDisposable firebaseGameLogListener;
         private int currentDay = 1;
         private bool isGameReallyOver = false;
+        private bool isProcessingTimerExpiration = false;
+        private System.Windows.Forms.Timer phasePollingTimer;
+        private string lastKnownPhase = null;
+        private string lastKnownPhaseStartTime = null;
 
         public InGameForm(List<string> playerNamesParam, TcpClient existingClient = null)
         {
@@ -78,7 +84,10 @@ namespace WerewolfClient.Forms
             // ConnectToServer(existingClient);
             this.WindowState = FormWindowState.Maximized;
             this.AutoScaleMode = AutoScaleMode.Dpi;
-
+            
+            // Ẩn form trong quá trình khởi tạo
+            this.Visible = false;
+            this.Opacity = 0;
         }
 
         public InGameForm() : this(new List<string>()) { }
@@ -86,125 +95,147 @@ namespace WerewolfClient.Forms
         private string placeholderText = "Nhập tin nhắn của bạn";
         private async void Form1_Load(object sender, EventArgs e)
         {
-            this.actionButton = new System.Windows.Forms.Button();
-            this.actionButton.Size = new System.Drawing.Size(130, 40);
-            this.actionButton.Visible = false;
-            this.actionButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.actionButton.FlatAppearance.BorderSize = 1;
-            this.actionButton.FlatAppearance.BorderColor = System.Drawing.Color.Aqua;
-            this.actionButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(48)))));
-            this.actionButton.ForeColor = System.Drawing.Color.White;
-            this.actionButton.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.actionButton.Name = "playerActionButton";
-            this.actionButton.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.Controls.Add(this.actionButton);
-            this.actionButton.BringToFront();
-            // co giãn fit với màn hình
-            panelLeft.Dock = DockStyle.Left;
-            tableLayoutPanel1.Dock = DockStyle.Fill;
-            panelLoadingOverlay.Dock = DockStyle.Fill;
-            richTextBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            richTextBox2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-
-
-
-            panelLoadingOverlay.Location = tableLayoutPanel1.Location;
-            panelLoadingOverlay.Size = tableLayoutPanel1.Size;
-            panelLoadingOverlay.BringToFront();
-            panelLoadingOverlay.Visible = true;
-            this.Resize += new EventHandler(InGameForm_Resize);
-
-            panelTopLeft.BackColor = Color.FromArgb(100, 0, 0, 0);
-            panelRole.BackColor = Color.FromArgb(100, 0, 0, 0);
-            labelTimer.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
-            labelTimer.ForeColor = Color.Orange;
-            labelTimer.BackColor = Color.Transparent;
-            labelTimer.Dock = DockStyle.Fill;
-            labelTimer.TextAlign = ContentAlignment.MiddleCenter;
-            labelTimer.BorderStyle = BorderStyle.None;
-            labelTimer.BringToFront();
-            labelTimer.Text = "Đang chờ...";
-            SetPlaceholder();
-            this.richTextBox2.Enter += new System.EventHandler(this.richTextBox2_Enter);
-            this.richTextBox2.Leave += new System.EventHandler(this.richTextBox2_Leave);
-            if (this.button1 != null)
+            try 
             {
-                this.button1.Click += new System.EventHandler(this.button1_Click);
-            }
-            if (this.richTextBox2 != null)
-            {
-                this.richTextBox2.KeyDown += new System.Windows.Forms.KeyEventHandler(this.richTextBox2_KeyDown);
-            }
-            if (this.btnRole != null)
-            {
-                this.btnRole.Click += new System.EventHandler(this.btnRole_Click);
-            }
-            if (this.btnQuit != null)
-            {
-                this.btnQuit.Click += new System.EventHandler(this.BtnQuit_Click);
-            }
+                this.actionButton = new System.Windows.Forms.Button();
+                this.actionButton.Size = new System.Drawing.Size(130, 40);
+                this.actionButton.Visible = false;
+                this.actionButton.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+                this.actionButton.FlatAppearance.BorderSize = 1;
+                this.actionButton.FlatAppearance.BorderColor = System.Drawing.Color.Aqua;
+                this.actionButton.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(48)))));
+                this.actionButton.ForeColor = System.Drawing.Color.White;
+                this.actionButton.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+                this.actionButton.Name = "playerActionButton";
+                this.actionButton.Cursor = System.Windows.Forms.Cursors.Hand;
+                this.Controls.Add(this.actionButton);
+                this.actionButton.BringToFront();
+                // co giãn fit với màn hình
+                panelLeft.Dock = DockStyle.Left;
+                tableLayoutPanel1.Dock = DockStyle.Fill;
+                panelLoadingOverlay.Dock = DockStyle.Fill;
+                richTextBox1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+                richTextBox2.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+                button1.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
 
-            _updatePlayersDisplayDebounceTimer = new System.Windows.Forms.Timer();
-            _updatePlayersDisplayDebounceTimer.Interval = UpdatePlayersDisplayDebounceTimeMs;
-            _updatePlayersDisplayDebounceTimer.Tick += async (s, ev) =>
-            {
-                _updatePlayersDisplayDebounceTimer.Stop();
-                if (this.IsHandleCreated && !this.IsDisposed && isGameDataLoaded)
+                panelLoadingOverlay.Location = tableLayoutPanel1.Location;
+                panelLoadingOverlay.Size = tableLayoutPanel1.Size;
+                panelLoadingOverlay.BringToFront();
+                panelLoadingOverlay.Visible = true;
+                this.Resize += new EventHandler(InGameForm_Resize);
+
+                panelTopLeft.BackColor = Color.FromArgb(100, 0, 0, 0);
+                panelRole.BackColor = Color.FromArgb(100, 0, 0, 0);
+                labelTimer.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
+                labelTimer.ForeColor = Color.Orange;
+                labelTimer.BackColor = Color.Transparent;
+                labelTimer.Dock = DockStyle.Fill;
+                labelTimer.TextAlign = ContentAlignment.MiddleCenter;
+                labelTimer.BorderStyle = BorderStyle.None;
+                labelTimer.BringToFront();
+                labelTimer.Text = "Đang chờ...";
+                SetPlaceholder();
+
+                // Gỡ bỏ các event handlers cũ trước khi thêm mới
+                this.richTextBox2.Enter -= this.richTextBox2_Enter;
+                this.richTextBox2.Leave -= this.richTextBox2_Leave;
+                this.button1.Click -= this.button1_Click;
+                this.richTextBox2.KeyDown -= this.richTextBox2_KeyDown;
+                this.btnRole.Click -= this.btnRole_Click;
+                this.btnQuit.Click -= this.BtnQuit_Click;
+
+                // Thêm lại các event handlers
+                this.richTextBox2.Enter += this.richTextBox2_Enter;
+                this.richTextBox2.Leave += this.richTextBox2_Leave;
+                this.button1.Click += this.button1_Click;
+                this.richTextBox2.KeyDown += this.richTextBox2_KeyDown;
+                this.btnRole.Click += this.btnRole_Click;
+                this.btnQuit.Click += this.BtnQuit_Click;
+
+                _updatePlayersDisplayDebounceTimer = new System.Windows.Forms.Timer();
+                _updatePlayersDisplayDebounceTimer.Interval = UpdatePlayersDisplayDebounceTimeMs;
+                _updatePlayersDisplayDebounceTimer.Tick += async (s, ev) =>
                 {
-                    await UpdatePlayerDisplayAsync();
+                    _updatePlayersDisplayDebounceTimer.Stop();
+                    if (this.IsHandleCreated && !this.IsDisposed && isGameDataLoaded)
+                    {
+                        await UpdatePlayerDisplayAsync();
+                    }
+                };
+
+                if (!isGameDataLoaded && !string.IsNullOrEmpty(currentUserId) && !string.IsNullOrEmpty(gameId))
+                {
+                    isGameDataLoaded = true;
+                    try
+                    {
+                        if (IsHandleCreated) labelLoading.Text = "Đang tải vai trò...";
+                        await LoadCurrentUserRole();
+
+                        if (IsHandleCreated) labelLoading.Text = "Đang chuẩn bị giao diện người chơi...";
+                        await UpdatePlayerDisplayAsync();
+
+                        if (IsHandleCreated) labelLoading.Text = "Đang đồng bộ trạng thái trò chơi...";
+                        await LoadCurrentPhaseFromFirebase();
+
+                        // Chỉ ẩn panel loading nếu game CHƯA kết thúc và form còn tồn tại
+                        if (!isGameReallyOver && IsHandleCreated && panelLoadingOverlay != null)
+                        {
+                            panelLoadingOverlay.Visible = false;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        isGameDataLoaded = false;
+                        if (IsHandleCreated)
+                        {
+                            labelLoading.Text = $"Lỗi tải dữ liệu: {ex.Message}";
+                            MessageBox.Show($"Error loading game data: {ex.Message}", "Lỗi Tải Dữ Liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            if (panelLoadingOverlay != null) panelLoadingOverlay.Visible = false; // Vẫn ẩn nếu lỗi
+                        }
+                    }
                 }
-            };
-
-            if (!isGameDataLoaded && !string.IsNullOrEmpty(currentUserId) && !string.IsNullOrEmpty(gameId))
-            {
-                isGameDataLoaded = true;
-                try
+                else if (isGameDataLoaded)
                 {
-                    if (IsHandleCreated) labelLoading.Text = "Đang tải vai trò...";
-                    await LoadCurrentUserRole();
-
-                    if (IsHandleCreated) labelLoading.Text = "Đang chuẩn bị giao diện người chơi...";
                     await UpdatePlayerDisplayAsync();
-
-                    if (IsHandleCreated) labelLoading.Text = "Đang đồng bộ trạng thái trò chơi...";
-                    SetupFirebaseListeners();
-                    await LoadCurrentPhaseFromFirebase();
-
                     // Chỉ ẩn panel loading nếu game CHƯA kết thúc và form còn tồn tại
                     if (!isGameReallyOver && IsHandleCreated && panelLoadingOverlay != null)
                     {
                         panelLoadingOverlay.Visible = false;
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    isGameDataLoaded = false;
                     if (IsHandleCreated)
                     {
-                        labelLoading.Text = $"Lỗi tải dữ liệu: {ex.Message}";
-                        MessageBox.Show($"Error loading game data: {ex.Message}", "Lỗi Tải Dữ Liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        labelLoading.Text = "Lỗi: Thông tin game/người dùng không hợp lệ.";
+                        MessageBox.Show("Thông tin game hoặc người dùng không hợp lệ để tải dữ liệu.", "Lỗi Dữ Liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         if (panelLoadingOverlay != null) panelLoadingOverlay.Visible = false; // Vẫn ẩn nếu lỗi
                     }
                 }
-            }
-            else if (isGameDataLoaded)
-            {
-                await UpdatePlayerDisplayAsync();
-                // Chỉ ẩn panel loading nếu game CHƯA kết thúc và form còn tồn tại
-                if (!isGameReallyOver && IsHandleCreated && panelLoadingOverlay != null)
+
+                // Hiển thị form với hiệu ứng fade in
+                if (IsHandleCreated)
                 {
-                    panelLoadingOverlay.Visible = false;
+                    this.Visible = true;
+                    for (double i = 0; i <= 1; i += 0.1)
+                    {
+                        this.Opacity = i;
+                        await Task.Delay(10);
+                    }
+                    this.Opacity = 1;
                 }
+                // BẮT ĐẦU POLLING PHASE SAU KHI FORM ĐÃ LOAD VÀ gameId ĐÃ ĐƯỢC SET
+                StartPhasePolling();
             }
-            else
+            catch (Exception ex)
             {
                 if (IsHandleCreated)
                 {
-                    labelLoading.Text = "Lỗi: Thông tin game/người dùng không hợp lệ.";
-                    MessageBox.Show("Thông tin game hoặc người dùng không hợp lệ để tải dữ liệu.", "Lỗi Dữ Liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    if (panelLoadingOverlay != null) panelLoadingOverlay.Visible = false; // Vẫn ẩn nếu lỗi
+                    MessageBox.Show($"Lỗi khởi tạo form: {ex.Message}", "Lỗi Khởi Tạo", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
+                // Vẫn hiển thị form nếu có lỗi
+                this.Visible = true;
+                this.Opacity = 1;
             }
         }
         private void SetPlaceholder()
@@ -498,7 +529,8 @@ namespace WerewolfClient.Forms
                 return;
             }
 
-            string formattedMessage = $"[{logEntry.Timestamp:HH:mm}] {logEntry.Message}\n";
+            // Luôn sử dụng thời gian hiện tại
+            string formattedMessage = $"[{DateTime.Now:HH:mm:ss}] {logEntry.Message}\n";
             Font logFont = new Font(richTextBox1.Font, FontStyle.Italic);
             Color logColor = Color.LightSteelBlue;
 
@@ -733,7 +765,7 @@ namespace WerewolfClient.Forms
                 {
                     if (game.PhaseDuration.HasValue) phaseDurationSeconds = game.PhaseDuration.Value;
                     Console.WriteLine($"DIAGNOSTIC InGameForm: LoadCurrentPhaseFromFirebase - Loaded Phase: {game.CurrentPhase}, StartTime: {game.PhaseStartTime}, Duration: {phaseDurationSeconds}s");
-                    UpdatePhaseAndTimerFromFirebase(game.CurrentPhase, game.PhaseStartTime);
+                    await UpdatePhaseAndTimerFromFirebase(game.CurrentPhase, game.PhaseStartTime);
                 }
                 else
                 {
@@ -747,161 +779,28 @@ namespace WerewolfClient.Forms
             }
         }
 
-        private void SetupFirebaseListeners()
+        private void StartPhasePolling()
         {
-            if (isFirebaseListenerSetup || string.IsNullOrEmpty(gameId)) return;
-            try
+            if (phasePollingTimer == null)
             {
-                var firebase = new FirebaseClient(
-                    "https://werewolf-d83dd-default-rtdb.asia-southeast1.firebasedatabase.app/",
-                    new FirebaseOptions { AuthTokenAsyncFactory = () => Task.FromResult(CurrentUserManager.CurrentUser?.IdToken) });
-
-                if (firebasePhaseListener == null)
+                phasePollingTimer = new System.Windows.Forms.Timer();
+                phasePollingTimer.Interval = 2000; // 2 seconds
+                phasePollingTimer.Tick += async (s, e) =>
                 {
-                    firebasePhaseListener = firebase.Child("games").Child(gameId)
-                        .AsObservable<Game>()
-                        .Subscribe(
-                            gameEvent => {
-                                if (gameEvent.Object != null)
-                                {
-                                    if (gameEvent.Object.PhaseDuration.HasValue) phaseDurationSeconds = gameEvent.Object.PhaseDuration.Value;
-                                    Console.WriteLine($"DIAGNOSTIC InGameForm: firebasePhaseListener received update. Phase: {gameEvent.Object.CurrentPhase}, StartTime: {gameEvent.Object.PhaseStartTime}, Duration: {phaseDurationSeconds}s");
-                                    uiContext.Post(new SendOrPostCallback(o => UpdatePhaseAndTimerFromFirebase(((Game)o).CurrentPhase, ((Game)o).PhaseStartTime)), gameEvent.Object);
-                                }
-                                else { Console.WriteLine("DIAGNOSTIC InGameForm: firebasePhaseListener received null gameEvent.Object"); }
-                            },
-                            ex => HandleFirebaseError("Phase Listener", ex)
-                        );
-                    Console.WriteLine($"DIAGNOSTIC InGameForm: firebasePhaseListener for gameId '{gameId}' setup.");
-                }
-
-                if (firebaseGameStatusListener == null)
-                {
-                    firebaseGameStatusListener = firebase.Child("games").Child(gameId).Child("status")
-                        .AsObservable<string>()
-                        .Subscribe(
-                            statusEvent => {
-                                Console.WriteLine($"DIAGNOSTIC InGameForm: firebaseGameStatusListener received update. Status: {statusEvent.Object}");
-                                uiContext.Post(new SendOrPostCallback(o => ProcessGameStatusUpdate((string)o)), statusEvent.Object);
-                            },
-                            ex => HandleFirebaseError("Game Status Listener", ex)
-                        );
-                    Console.WriteLine($"DIAGNOSTIC InGameForm: firebaseGameStatusListener for gameId '{gameId}' setup.");
-                }
-
-                if (firebasePlayersListener == null)
-                {
-                    firebasePlayersListener = firebase.Child("games").Child(gameId).Child("players")
-                        .AsObservable<Player>()
-                        .Subscribe(
-                            playerEventOrSnapshot =>
-                            {
-                                if (this.IsHandleCreated && !this.IsDisposed)
-                                {
-                                    Console.WriteLine($"DIAGNOSTIC InGameForm: firebasePlayersListener received update for player key: {playerEventOrSnapshot.Key}. Triggering debounce timer.");
-                                    _updatePlayersDisplayDebounceTimer.Stop();
-                                    _updatePlayersDisplayDebounceTimer.Start();
-                                }
-                            },
-                            ex => HandleFirebaseError("Players Listener", ex)
-                        );
-                    Console.WriteLine($"DIAGNOSTIC InGameForm: firebasePlayersListener for gameId '{gameId}' setup.");
-                }
-
-                if (firebaseGameLogListener == null)
-                {
-                    firebaseGameLogListener = firebase
-                        .Child("gameLogs")
-                        .Child(gameId)
-                        .AsObservable<GameLog>()
-                        .Subscribe(
-                            logEvent =>
-                            {
-                                if (logEvent.EventType == Firebase.Database.Streaming.FirebaseEventType.InsertOrUpdate && logEvent.Object != null) // Check for new logs
-                                {
-                                    GameLog newLog = logEvent.Object;
-                                    Console.WriteLine($"DIAGNOSTIC InGameForm: firebaseGameLogListener received new log (Key: {logEvent.Key}): '{newLog.Message}' for phase '{newLog.Phase}'");
-                                    uiContext.Post(new SendOrPostCallback((state) =>
-                                    {
-                                        DisplayGameLog(newLog);
-                                    }), null);
-                                }
-                            },
-                            ex => HandleFirebaseError("GameLog Listener", ex)
-                        );
-                    Console.WriteLine($"DIAGNOSTIC InGameForm: firebaseGameLogListener for gameId '{gameId}' setup.");
-                }
-
-
-                isFirebaseListenerSetup = true;
-                Console.WriteLine("DIAGNOSTIC InGameForm: Firebase Listeners Setup COMPLETE.");
-            }
-            catch (Exception ex) { HandleFirebaseError("SetupListeners", ex); }
-        }
-
-
-        private void HandleFirebaseError(string listenerName, Exception ex)
-        {
-            Console.WriteLine($"DIAGNOSTIC InGameForm: Firebase Error ({listenerName}): {ex.ToString()}");
-            if (this.IsHandleCreated && !this.IsDisposed)
-            {
-                MessageBox.Show($"Lỗi Firebase Listener ({listenerName}): {ex.Message}", "Lỗi Firebase", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void ProcessGameStatusUpdate(object statusObj)
-        {
-            string status = statusObj as string;
-            if (status == null || this.IsDisposed || !this.IsHandleCreated) return;
-            Console.WriteLine($"DIAGNOSTIC InGameForm: ProcessGameStatusUpdate. Status: {status}");
-            string message = ""; bool endGameSignal = false;
-            switch (status.ToLower())
-            {
-                case "villagers_win": message = "Phe Dân làng đã thắng!"; endGameSignal = true; break;
-                case "werewolves_win": message = "Phe Sói đã thắng!"; endGameSignal = true; break;
-                case "ended": message = "Trò chơi đã kết thúc."; endGameSignal = true; break;
-            }
-
-            if (endGameSignal && !isGameReallyOver)
-            {
-                isGameReallyOver = true;
-                if (IsHandleCreated)
-                    MessageBox.Show(message, "Kết Thúc Game", MessageBoxButtons.OK, MessageBoxIcon.Information);
-
-                if (phaseTimerUi != null) phaseTimerUi.Stop();
-                currentPhaseClient = GamePhaseClient.Unknown;
-
-                if (IsHandleCreated && labelTimer != null && !labelTimer.IsDisposed)
-                {
-                    if (labelTimer.InvokeRequired)
+                    var fbHelper = new FirebaseHelper();
+                    var game = await fbHelper.GetGame(gameId);
+                    if (game != null && (game.CurrentPhase != lastKnownPhase || game.PhaseStartTime != lastKnownPhaseStartTime))
                     {
-                        labelTimer.Invoke(new Action(() => labelTimer.Text = "GAME KẾT THÚC"));
+                        lastKnownPhase = game.CurrentPhase;
+                        lastKnownPhaseStartTime = game.PhaseStartTime;
+                        await UpdatePhaseAndTimerFromFirebase(game.CurrentPhase, game.PhaseStartTime);
                     }
-                    else
-                    {
-                        labelTimer.Text = "GAME KẾT THÚC";
-                    }
-                }
-
-                if (IsHandleCreated && panelLoadingOverlay != null)
-                {
-                    string overlayMessage = $"GAME KẾT THÚC\n{message}";
-                    if (labelLoading.InvokeRequired) { labelLoading.Invoke(new Action(() => labelLoading.Text = overlayMessage)); }
-                    else { labelLoading.Text = overlayMessage; }
-
-                    if (panelLoadingOverlay.InvokeRequired) { panelLoadingOverlay.Invoke(new Action(() => { panelLoadingOverlay.Visible = true; panelLoadingOverlay.BringToFront(); })); }
-                    else { panelLoadingOverlay.Visible = true; panelLoadingOverlay.BringToFront(); }
-                }
-
-                if (actionButton != null && actionButton.Visible)
-                {
-                    if (actionButton.InvokeRequired) { actionButton.Invoke(new Action(() => actionButton.Visible = false)); }
-                    else { actionButton.Visible = false; }
-                }
+                };
             }
+            phasePollingTimer.Start();
         }
 
-        private async void UpdatePhaseAndTimerFromFirebase(string phase, string startTimeStr)
+        private async Task UpdatePhaseAndTimerFromFirebase(string phase, string startTimeStr)
         {
             if (this.IsDisposed || !this.IsHandleCreated) return;
 
@@ -912,71 +811,76 @@ namespace WerewolfClient.Forms
                 currentGameData = await fbHelper.GetGame(gameId);
             }
 
-            if (currentGameData != null && currentGameData.PhaseDuration.HasValue)
-            {
-                phaseDurationSeconds = currentGameData.PhaseDuration.Value;
-            }
-
             if (currentGameData != null)
-            {
+            {                
+                // Debug: Check for both PhaseStartTime and phaseStartTime
+                var type = currentGameData.GetType();
+                var propLower = type.GetProperty("phaseStartTime");
+                var propUpper = type.GetProperty("PhaseStartTime");
+                if (propLower != null && propUpper != null)
+                {
+                    DisplayGameLog(new GameLog
+                    {
+                        Timestamp = DateTime.UtcNow,
+                        Message = $"[DEBUG] Game object có cả PhaseStartTime và phaseStartTime. Hãy chỉ dùng PhaseStartTime (chữ hoa đầu)!",
+                        Phase = "system"
+                    });
+                }
+                if (currentGameData.PhaseDuration.HasValue)
+                {
+                    phaseDurationSeconds = currentGameData.PhaseDuration.Value;
+                    DisplayGameLog(new GameLog
+                    {
+                        Timestamp = DateTime.UtcNow,
+                        Message = $"Thời gian phase: {phaseDurationSeconds} giây",
+                        Phase = "system"
+                    });
+                }
                 this.currentDay = currentGameData.RoundNumber > 0 ? currentGameData.RoundNumber : 1;
             }
-            else
-            {
-                this.currentDay = 1;
-            }
 
-            if (currentGameData != null &&
+            // Reset the processing flag when phase changes
+            isProcessingTimerExpiration = false;
+
+            // Kiểm tra trạng thái kết thúc game
+            if (currentGameData != null && 
                 (currentGameData.Status == "villagers_win" || currentGameData.Status == "werewolves_win" || currentGameData.Status == "ended"))
             {
-                Console.WriteLine($"DIAGNOSTIC InGameForm: UpdatePhaseAndTimerFromFirebase - Game already ended (Status: {currentGameData.Status}). Suppressing phase change UI updates.");
                 if (!isGameReallyOver)
                 {
                     isGameReallyOver = true;
                     currentPhaseClient = GamePhaseClient.Unknown;
-                    if (phaseTimerUi != null) phaseTimerUi.Stop();
+                    if (phaseTimerUi != null)
+                    {
+                        phaseTimerUi.Stop();
+                    }
+                    
                     if (labelTimer != null && !labelTimer.IsDisposed)
                     {
-                        if (labelTimer.InvokeRequired) { labelTimer.Invoke(new Action(() => labelTimer.Text = "GAME KẾT THÚC")); }
-                        else { labelTimer.Text = "GAME KẾT THÚC"; }
+                        if (labelTimer.InvokeRequired)
+                        {
+                            labelTimer.Invoke(new Action(() => {
+                                labelTimer.Text = "GAME KẾT THÚC";
+                                labelTimer.ForeColor = Color.Red;
+                            }));
+                        }
+                        else
+                        {
+                            labelTimer.Text = "GAME KẾT THÚC";
+                            labelTimer.ForeColor = Color.Red;
+                        }
                     }
 
-                    if (IsHandleCreated && panelLoadingOverlay != null)
+                    if (IsHandleCreated)
                     {
-                        string endMessage = "";
-                        if (currentGameData.Status == "villagers_win") endMessage = "Phe Dân làng đã thắng!";
-                        else if (currentGameData.Status == "werewolves_win") endMessage = "Phe Sói đã thắng!";
-                        else endMessage = "Trò chơi đã kết thúc.";
-                        string overlayMessage = $"GAME KẾT THÚC\n{endMessage}";
-
-                        if (labelLoading.InvokeRequired) { labelLoading.Invoke(new Action(() => labelLoading.Text = overlayMessage)); }
-                        else { labelLoading.Text = overlayMessage; }
-
-                        if (panelLoadingOverlay.InvokeRequired) { panelLoadingOverlay.Invoke(new Action(() => { panelLoadingOverlay.Visible = true; panelLoadingOverlay.BringToFront(); })); }
-                        else { panelLoadingOverlay.Visible = true; panelLoadingOverlay.BringToFront(); }
-                    }
-
-                    if (actionButton != null && actionButton.Visible)
-                    {
-                        if (actionButton.InvokeRequired) { actionButton.Invoke(new Action(() => actionButton.Visible = false)); }
-                        else { actionButton.Visible = false; }
+                        ProcessGameStatusUpdate(currentGameData.Status);
                     }
                 }
                 return;
             }
 
+            // Xử lý phase mới
             GamePhaseClient oldPhaseClient = currentPhaseClient;
-
-            if (phase == lastFirebasePhaseRaw && startTimeStr == lastFirebaseStartTimeRaw && currentPhaseClient != GamePhaseClient.Unknown && !isGameReallyOver)
-            {
-                Console.WriteLine($"DIAGNOSTIC InGameForm: UpdatePhaseAndTimerFromFirebase - No change detected from last Firebase data ({phase}, {startTimeStr}). Current client phase: {currentPhaseClient}. Skipping update.");
-                return;
-            }
-
-            lastFirebasePhaseRaw = phase;
-            lastFirebaseStartTimeRaw = startTimeStr;
-            Console.WriteLine($"DIAGNOSTIC InGameForm: UpdatePhaseAndTimerFromFirebase - Processing. New Firebase Phase: '{phase}', StartTime: '{startTimeStr}', Round for display logic: {this.currentDay}");
-
             GamePhaseClient newPhaseClientOnClient = GamePhaseClient.Unknown;
             string newPhaseDisplayName = "Không xác định";
 
@@ -999,65 +903,71 @@ namespace WerewolfClient.Forms
                     break;
             }
 
-            bool actualPhaseChangeOnClient = (currentPhaseClient != newPhaseClientOnClient);
-
-            if (actualPhaseChangeOnClient || currentPhaseClient == GamePhaseClient.Unknown)
+            if (newPhaseClientOnClient != oldPhaseClient || currentPhaseClient == GamePhaseClient.Unknown)
             {
                 currentPhaseClient = newPhaseClientOnClient;
-                Console.WriteLine($"DIAGNOSTIC InGameForm: Client phase set to: {currentPhaseClient} (Actual Game Round: {this.currentDay})");
-
-                if (actualPhaseChangeOnClient && currentPhaseClient != GamePhaseClient.Unknown && !isGameReallyOver)
+                if (newPhaseClientOnClient != GamePhaseClient.Unknown && !isGameReallyOver)
                 {
                     GameLog clientPhaseChangeLog = new GameLog
                     {
                         Timestamp = DateTime.UtcNow,
-                        Message = $"Đã chuyển sang Giai đoạn {newPhaseDisplayName}.",
+                        Message = $"Hệ thống: Đã chuyển sang Giai đoạn {newPhaseDisplayName}.",
                         Phase = "system_phase_change"
                     };
                     DisplayGameLog(clientPhaseChangeLog);
                 }
             }
 
-            if (!string.IsNullOrEmpty(startTimeStr))
+            // Luôn chỉ dùng PhaseStartTime (chữ hoa đầu)
+            string phaseStartTimeStr = currentGameData.PhaseStartTime;
+            if (!string.IsNullOrEmpty(phaseStartTimeStr))
             {
                 try
                 {
-                    phaseStartTimeUtc = DateTime.Parse(startTimeStr, null, System.Globalization.DateTimeStyles.RoundtripKind).ToUniversalTime();
-                    Console.WriteLine($"DIAGNOSTIC InGameForm: Parsed phaseStartTimeUtc: {phaseStartTimeUtc:o}");
+                    phaseStartTimeUtc = DateTime.Parse(phaseStartTimeStr, null, System.Globalization.DateTimeStyles.RoundtripKind).ToUniversalTime();
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"DIAGNOSTIC InGameForm: Error parsing startTimeStr '{startTimeStr}'. Error: {ex.Message}. Using UtcNow.");
-                    if (IsHandleCreated)
-                    {
-                        MessageBox.Show($"Lỗi định dạng thời gian bắt đầu phase, sử dụng UtcNow. Lỗi: {ex.Message}", "Lỗi Thời Gian Phase", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
+                    Console.WriteLine($"Error parsing start time: {ex.Message}\nUsing current time instead");
                     phaseStartTimeUtc = DateTime.UtcNow;
                 }
             }
             else
             {
                 phaseStartTimeUtc = DateTime.UtcNow;
-                Console.WriteLine($"DIAGNOSTIC InGameForm: startTimeStr is null/empty. Using UtcNow for phaseStartTimeUtc: {phaseStartTimeUtc:o}");
+                DisplayGameLog(new GameLog
+                {
+                    Timestamp = DateTime.UtcNow,
+                    Message = $"Không có thời gian bắt đầu, sử dụng thời gian hiện tại: {phaseStartTimeUtc.ToLocalTime():HH:mm:ss}",
+                    Phase = "SystemError"
+                });
             }
 
+            // Khởi động lại timer
             if (phaseTimerUi == null)
             {
                 phaseTimerUi = new System.Windows.Forms.Timer { Interval = 1000 };
                 phaseTimerUi.Tick += new System.EventHandler(this.PhaseTimerUi_Tick);
             }
 
-            if (!isGameReallyOver && (currentGameData == null || (currentGameData.Status != "villagers_win" && currentGameData.Status != "werewolves_win" && currentGameData.Status != "ended")))
+            if (!isGameReallyOver)
             {
+                // Stop the timer first
                 phaseTimerUi.Stop();
-                PhaseTimerUi_Tick(null, EventArgs.Empty);
-                phaseTimerUi.Start();
-                Console.WriteLine($"DIAGNOSTIC InGameForm: Phase timer restarted for {currentPhaseClient} (Actual Game Round: {this.currentDay}). Duration: {phaseDurationSeconds}s");
-            }
-            else
-            {
-                if (phaseTimerUi != null) phaseTimerUi.Stop();
-                Console.WriteLine($"DIAGNOSTIC InGameForm: Game ended or no data. Phase timer NOT restarted for {currentPhaseClient}. isGameReallyOver: {isGameReallyOver}");
+                
+                // Reset timer state
+                isProcessingTimerExpiration = false;
+                
+                // Update the timer display immediately
+                TimeSpan elapsed = DateTime.UtcNow - phaseStartTimeUtc;
+                int timeLeft = Math.Max(0, phaseDurationSeconds - (int)elapsed.TotalSeconds);
+                UpdateTimerLabelUi(timeLeft);
+                
+                // Only start the timer if there's time left
+                if (timeLeft > 0)
+                {
+                    phaseTimerUi.Start();
+                }
             }
         }
 
@@ -1076,42 +986,58 @@ namespace WerewolfClient.Forms
             int timeLeft = Math.Max(0, phaseDurationSeconds - (int)elapsed.TotalSeconds);
             UpdateTimerLabelUi(timeLeft);
 
-            if (timeLeft <= 0 && phaseTimerUi.Enabled)
+            if (timeLeft <= 0)
             {
+                // Stop the timer first to prevent multiple triggers
                 phaseTimerUi.Stop();
-                Console.WriteLine($"DIAGNOSTIC InGameForm: Timer expired. User: {CurrentUserName}, isHost: {isHost}, Current Client Phase: {currentPhaseClient}");
-
-                if (isHost && !isGameReallyOver)
+                
+                // Only process timer expiration if we haven't already started processing
+                if (!isProcessingTimerExpiration)
                 {
-                    var fb = new FirebaseHelper();
-                    var game = await fb.GetGame(gameId);
-
-                    if (game != null)
+                    isProcessingTimerExpiration = true;
+                    try
                     {
-                        Console.WriteLine($"DIAGNOSTIC InGameForm: Host ({CurrentUserName}) sees current Firebase phase as: {game.CurrentPhase}, Game Status: {game.Status}");
-                        if (game.Status != "villagers_win" && game.Status != "werewolves_win" && game.Status != "ended")
+                        DisplayGameLog(new GameLog
                         {
-                            Console.WriteLine($"DIAGNOSTIC InGameForm: Host ({CurrentUserName}) is calling NextPhase_Host(). Current Firebase Phase from game object: {game.CurrentPhase}");
-                            await NextPhase_Host();
-                        }
-                        else
-                        {
-                            Console.WriteLine($"DIAGNOSTIC InGameForm: Host ({CurrentUserName}) - Game already ended with status: {game.Status}. No phase change initiated from timer.");
-                            ProcessGameStatusUpdate(game.Status);
+                            Timestamp = DateTime.UtcNow,
+                            Message = "Hết thời gian phase",
+                            Phase = "system"
+                        });
+
+                        var fb = new FirebaseHelper();
+                        var game = await fb.GetGame(gameId);
+
+                        if (game != null)
+                        {                    
+                            if (game.Status == "villagers_win" || game.Status == "werewolves_win" || game.Status == "ended")
+                            {
+                                ProcessGameStatusUpdate(game.Status);
+                            }
+                            else if (isHost)
+                            {
+                                await NextPhase_Host();
+                            }
+                            else
+                            {
+                                // For non-host players, just wait for the host to update the phase
+                                // Don't restart the timer, just wait for the next phase update
+                                DisplayGameLog(new GameLog
+                                {
+                                    Timestamp = DateTime.UtcNow,
+                                    Message = "Chờ host chuyển phase tiếp theo...",
+                                    Phase = "system"
+                                });
+                            }
                         }
                     }
-                    else
+                    finally
                     {
-                        Console.WriteLine($"DIAGNOSTIC InGameForm: Host ({CurrentUserName}) - Could not get game data from Firebase. No phase change initiated from timer.");
-                        if (IsHandleCreated) MessageBox.Show("Không thể lấy dữ liệu game từ Firebase để chuyển phase (Host).", "Lỗi Dữ Liệu Game", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        isProcessingTimerExpiration = false;
                     }
-                }
-                else if (!isHost)
-                {
-                    Console.WriteLine($"DIAGNOSTIC InGameForm: Non-Host client ({CurrentUserName}) - Timer expired for phase {currentPhaseClient}. Waiting for Host to update Firebase.");
                 }
             }
         }
+
         private void UpdateTimerLabelUi(int? timeToDisplayOverride = null)
         {
             if (this.IsDisposed || !this.IsHandleCreated || labelTimer == null || !labelTimer.IsHandleCreated) return;
@@ -1329,59 +1255,56 @@ namespace WerewolfClient.Forms
 
         private async Task NextPhase_Host()
         {
-            if (this.IsDisposed || !this.IsHandleCreated || isGameReallyOver) return; // Không làm gì nếu game đã kết thúc
-            Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() called by Host ({CurrentUserName}).");
             try
             {
+                if (IsHandleCreated && panelLoadingOverlay != null) panelLoadingOverlay.Visible = true;
+
                 var firebaseHelper = new FirebaseHelper();
-                var game = await firebaseHelper.GetGame(gameId);
-                if (game == null)
+                var currentGameData = await firebaseHelper.GetGame(gameId);
+                if (currentGameData == null)
                 {
-                    Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Failed to get game data for gameId: {gameId}");
-                    if (IsHandleCreated) MessageBox.Show("Không thể lấy dữ liệu game trong NextPhase_Host.", "Lỗi (Host)", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                if (game.Status == "villagers_win" || game.Status == "werewolves_win" || game.Status == "ended")
-                {
-                    Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Game already ended with status: {game.Status}.");
-                    ProcessGameStatusUpdate(game.Status);
+                    if (IsHandleCreated && panelLoadingOverlay != null) panelLoadingOverlay.Visible = false;
                     return;
                 }
 
-                string currentPhaseStrFromFirebase = game.CurrentPhase;
-                Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Current phase from Firebase is '{currentPhaseStrFromFirebase}'.");
-
-                if (currentPhaseStrFromFirebase.ToLower() == "night")
+                string currentPhaseStrFromFirebase = currentGameData.CurrentPhase;
+                if (currentPhaseStrFromFirebase == "night")
                 {
-                    if (IsHandleCreated && panelLoadingOverlay != null && !isGameReallyOver) { labelLoading.Text = "Đang xử lý kết quả đêm..."; panelLoadingOverlay.Visible = true; }
-                    Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Processing night results...");
                     await firebaseHelper.ProcessNightResults(gameId);
                     Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Night results processed.");
                 }
-                else if (currentPhaseStrFromFirebase.ToLower() == "day_vote")
+                else if (currentPhaseStrFromFirebase == "day_vote")
                 {
-                    if (IsHandleCreated && panelLoadingOverlay != null && !isGameReallyOver) { labelLoading.Text = "Đang xử lý kết quả bỏ phiếu..."; panelLoadingOverlay.Visible = true; }
-                    Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Processing day vote results...");
                     await firebaseHelper.ProcessDayVoteResults(gameId);
                     Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Day vote results processed.");
                 }
 
                 if (isGameReallyOver)
                 {
+                    MessageBox.Show("Game is over, stopping phase change", "Debug Game Over");
                     if (IsHandleCreated && panelLoadingOverlay != null) panelLoadingOverlay.Visible = true;
                     return;
                 }
 
-
-                Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Calling firebaseHelper.NextPhase with current Firebase phase: {currentPhaseStrFromFirebase}.");
+                // Only call NextPhase, do not update PhaseStartTime manually
                 string gameEndStatus = await firebaseHelper.NextPhase(gameId, currentPhaseStrFromFirebase);
-                Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - firebaseHelper.NextPhase call completed. Game end status: '{gameEndStatus ?? "null"}'");
 
-                if (IsHandleCreated && panelLoadingOverlay != null && !isGameReallyOver) panelLoadingOverlay.Visible = false;
-            }
+                if (IsHandleCreated && panelLoadingOverlay != null && !isGameReallyOver) 
+                {
+                    panelLoadingOverlay.Visible = false;
+                }
+
+                // Do NOT force update phase and timer here. Wait for Firebase event.
+                // var updatedGame = await firebaseHelper.GetGame(gameId);
+                // if (updatedGame != null)
+                // {
+                //     MessageBox.Show($"Forcing phase update with new data:\nPhase: {updatedGame.CurrentPhase}\nStartTime: {updatedGame.PhaseStartTime}", "Debug Force Update");
+                //     await UpdatePhaseAndTimerFromFirebase(updatedGame.CurrentPhase, updatedGame.PhaseStartTime);
+                // }
+            }   
             catch (Exception ex)
             {
-                Console.WriteLine($"DIAGNOSTIC InGameForm: NextPhase_Host() - Exception: {ex.ToString()}");
+                MessageBox.Show($"Error in NextPhase_Host: {ex.Message}\n{ex.StackTrace}", "Debug Error");
                 if (IsHandleCreated)
                 {
                     MessageBox.Show($"Lỗi khi chuyển phase (Host): {ex.Message}", "Lỗi Chuyển Phase", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -1400,11 +1323,27 @@ namespace WerewolfClient.Forms
             }
         }
 
-        private void btnRole_Click(object sender, EventArgs e) { RolesForm rolesForm = new RolesForm(); rolesForm.ShowDialog(); }
-        private void richTextBox2_KeyDown(object sender, KeyEventArgs e) { if (e.KeyCode == Keys.Enter && button1 != null) { button1.PerformClick(); e.SuppressKeyPress = true; } }
+        private void btnRole_Click(object sender, EventArgs e)
+        {
+            if (this.IsDisposed || !this.IsHandleCreated) return;
+            using (RolesForm rolesForm = new RolesForm())
+            {
+                rolesForm.ShowDialog();
+            }
+        }
+
+        private void richTextBox2_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter && button1 != null)
+            {
+                button1.PerformClick();
+                e.SuppressKeyPress = true;
+            }
+        }
 
         private async void BtnQuit_Click(object sender, EventArgs e)
         {
+            if (this.IsDisposed || !this.IsHandleCreated) return;
             try
             {
                 DialogResult result = MessageBox.Show(
@@ -1417,7 +1356,7 @@ namespace WerewolfClient.Forms
                 {
                     if (isServerConnected && tcpClient != null && networkStream != null && !string.IsNullOrEmpty(chatRoomId) && !string.IsNullOrEmpty(CurrentUserName))
                     {
-                        SendMessage($"QUIT_ROOM:{chatRoomId}:{CurrentUserName}"); // Sử dụng SendMessage đồng bộ gốc
+                        SendMessage($"QUIT_ROOM:{chatRoomId}:{CurrentUserName}");
                     }
 
                     // Dọn dẹp listeners và timers
@@ -1429,7 +1368,6 @@ namespace WerewolfClient.Forms
                     if (phaseTimerUi != null) { phaseTimerUi.Stop(); phaseTimerUi.Dispose(); phaseTimerUi = null; }
                     if (_updatePlayersDisplayDebounceTimer != null) { _updatePlayersDisplayDebounceTimer.Stop(); _updatePlayersDisplayDebounceTimer.Dispose(); _updatePlayersDisplayDebounceTimer = null; }
 
-
                     if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
                     {
                         _cancellationTokenSource.Cancel();
@@ -1439,7 +1377,7 @@ namespace WerewolfClient.Forms
             }
             catch (Exception ex)
             {
-                if (IsHandleCreated && !IsDisposed) // Kiểm tra trước khi hiển thị MessageBox
+                if (IsHandleCreated && !IsDisposed)
                 {
                     MessageBox.Show($"Lỗi khi thoát game: {ex.Message}", "Lỗi Thoát Game", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
@@ -1515,6 +1453,96 @@ namespace WerewolfClient.Forms
         private void tableLayoutPanel1_Paint(object sender, PaintEventArgs e)
         {
 
+        }
+
+        private void ProcessGameStatusUpdate(string gameStatus)
+        {
+            Console.WriteLine($"DIAGNOSTIC InGameForm: ProcessGameStatusUpdate called with status: {gameStatus}");
+            if (string.IsNullOrEmpty(gameStatus)) return;
+
+            string resultText = "";
+            string statsText = "";
+
+            switch (gameStatus.ToLower())
+            {
+                case "villagers_win":
+                    resultText = "DÂN LÀNG CHIẾN THẮNG!";
+                    statsText = "Dân làng đã tiêu diệt hết sói!";
+                    break;
+                case "werewolves_win":
+                    resultText = "SÓI CHIẾN THẮNG!";
+                    statsText = "Sói đã tiêu diệt hết dân làng!";
+                    break;
+                case "ended":
+                    resultText = "TRÒ CHƠI KẾT THÚC";
+                    statsText = "Trò chơi đã kết thúc.";
+                    break;
+                default:
+                    return;
+            }
+
+            Console.WriteLine($"DIAGNOSTIC InGameForm: Showing end game form with result: {resultText}");
+            if (this.IsDisposed || !this.IsHandleCreated) return;
+
+            // Ẩn form hiện tại trước
+            this.Hide();
+
+            // Tạo và hiển thị form mới trong một luồng riêng
+            this.BeginInvoke((MethodInvoker)delegate
+            {
+                try
+                {
+                    var endGameForm = new EndGameForm(resultText, gamePlayers, statsText, gameId, roomCode, isHost, client);
+                    endGameForm.SetInGameFormRef(this);
+                    endGameForm.FormClosed += (s, e) => this.Close();
+                    endGameForm.Show();
+                    Console.WriteLine("DIAGNOSTIC InGameForm: End game form shown successfully");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"DIAGNOSTIC InGameForm: Error showing end game form: {ex.Message}");
+                    MessageBox.Show($"Lỗi khi hiển thị màn hình kết thúc: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    // Nếu có lỗi, hiển thị lại form hiện tại
+                    this.Show();
+                }
+            });
+        }
+
+        public void CleanupNetworkResources()
+        {
+            // Hủy các listeners và timer
+            firebasePhaseListener?.Dispose(); firebasePhaseListener = null;
+            firebaseGameStatusListener?.Dispose(); firebaseGameStatusListener = null;
+            firebasePlayersListener?.Dispose(); firebasePlayersListener = null;
+            firebaseGameLogListener?.Dispose(); firebaseGameLogListener = null;
+
+            phaseTimerUi?.Stop(); phaseTimerUi?.Dispose(); phaseTimerUi = null;
+            _updatePlayersDisplayDebounceTimer?.Stop(); _updatePlayersDisplayDebounceTimer?.Dispose(); _updatePlayersDisplayDebounceTimer = null;
+
+            // Hủy CancellationTokenSource cho luồng nhận TCP
+            if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
+            {
+                _cancellationTokenSource.Cancel();
+            }
+            // Chờ luồng nhận TCP kết thúc (timeout lâu hơn)
+            if (_receivingTask != null && !_receivingTask.IsCompleted)
+            {
+                try { _receivingTask.Wait(1000); } catch { }
+            }
+            _cancellationTokenSource?.Dispose(); _cancellationTokenSource = null;
+
+            // Đóng kết nối TCP
+            if (networkStream != null)
+            {
+                try { networkStream.Close(); networkStream.Dispose(); } catch { }
+                networkStream = null;
+            }
+            if (tcpClient != null)
+            {
+                try { tcpClient.Close(); tcpClient.Dispose(); } catch { }
+                tcpClient = null;
+            }
+            isServerConnected = false;
         }
     }
 }

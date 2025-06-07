@@ -69,6 +69,12 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Forms\EndGameForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\EndGameForm.Designer.cs">
+      <DependentUpon>EndGameForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="FirebaseHelper.cs" />
     <Compile Include="Forms\GameRoomForm.cs">
       <SubType>Form</SubType>
@@ -213,6 +219,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\DeadIcon.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\WereWolfWin.jpg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

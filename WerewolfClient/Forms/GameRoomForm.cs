@@ -311,9 +311,17 @@ namespace WerewolfClient.Forms
                         if (roles.Count < playerCount) roles.Add(r);
                     // Còn lại là dân làng
                     while (roles.Count < playerCount) roles.Add("villager");
-                    // 4. Xáo trộn role
-                    var rnd = new Random();
-                    roles = roles.OrderBy(x => rnd.Next()).ToList();
+
+                    // 4. Xáo trộn role với seed ngẫu nhiên
+                    var rnd = new Random(Guid.NewGuid().GetHashCode());
+                    for (int i = roles.Count - 1; i > 0; i--)
+                    {
+                        int j = rnd.Next(i + 1);
+                        string temp = roles[i];
+                        roles[i] = roles[j];
+                        roles[j] = temp;
+                    }
+
                     // 5. Gán role cho từng player và cập nhật Firebase
                     for (int i = 0; i < playerCount; i++)
                     {
@@ -321,9 +329,9 @@ namespace WerewolfClient.Forms
                         var role = roles[i];
                         await _firebaseHelper.UpdatePlayerRole(gameId, playerId, role);
                     }
-                    // 6. Reset phaseStartTime khi bắt đầu game
-                      await _firebaseHelper.firebase
-                      .Child($"games/{gameId}/phaseStartTime")
+                    // 6. Reset PhaseStartTime khi bắt đầu game
+                    await _firebaseHelper.firebase
+                        .Child($"games/{gameId}/PhaseStartTime")
                         .PutAsync($"\"{DateTime.UtcNow.ToString("o")}\"");
                 }
             }
