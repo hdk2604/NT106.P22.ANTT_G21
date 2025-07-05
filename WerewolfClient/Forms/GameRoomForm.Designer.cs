@@ -52,7 +52,7 @@ namespace WerewolfClient.Forms
             this.lblRoomId.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
             this.lblRoomId.Location = new System.Drawing.Point(20, 15);
             this.lblRoomId.Name = "lblRoomId";
-            this.lblRoomId.Size = new System.Drawing.Size(148, 38);
+            this.lblRoomId.Size = new System.Drawing.Size(149, 38);
             this.lblRoomId.TabIndex = 0;
             this.lblRoomId.Text = "Room ID: ";
             // 
@@ -63,7 +63,7 @@ namespace WerewolfClient.Forms
             this.lblPlayerCount.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
             this.lblPlayerCount.Location = new System.Drawing.Point(20, 60);
             this.lblPlayerCount.Name = "lblPlayerCount";
-            this.lblPlayerCount.Size = new System.Drawing.Size(104, 32);
+            this.lblPlayerCount.Size = new System.Drawing.Size(101, 32);
             this.lblPlayerCount.TabIndex = 1;
             this.lblPlayerCount.Text = "Players: ";
             this.lblPlayerCount.Click += new System.EventHandler(this.lblPlayerCount_Click);
@@ -76,11 +76,11 @@ namespace WerewolfClient.Forms
             this.lstPlayers.Font = new System.Drawing.Font("Palatino Linotype", 11F);
             this.lstPlayers.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
             this.lstPlayers.FormattingEnabled = true;
-            this.lstPlayers.ItemHeight = 28;
-            this.lstPlayers.Location = new System.Drawing.Point(15, 45);
+            this.lstPlayers.ItemHeight = 29;
+            this.lstPlayers.Location = new System.Drawing.Point(15, 50);
             this.lstPlayers.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.lstPlayers.Name = "lstPlayers";
-            this.lstPlayers.Size = new System.Drawing.Size(268, 438);
+            this.lstPlayers.Size = new System.Drawing.Size(268, 433);
             this.lstPlayers.TabIndex = 2;
             // 
             // txtChat
@@ -90,11 +90,11 @@ namespace WerewolfClient.Forms
             this.txtChat.Dock = System.Windows.Forms.DockStyle.Fill;
             this.txtChat.Font = new System.Drawing.Font("Palatino Linotype", 11F);
             this.txtChat.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.txtChat.Location = new System.Drawing.Point(15, 45);
+            this.txtChat.Location = new System.Drawing.Point(15, 50);
             this.txtChat.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.txtChat.Name = "txtChat";
             this.txtChat.ReadOnly = true;
-            this.txtChat.Size = new System.Drawing.Size(568, 380);
+            this.txtChat.Size = new System.Drawing.Size(568, 373);
             this.txtChat.TabIndex = 3;
             this.txtChat.Text = "";
             // 
@@ -109,7 +109,7 @@ namespace WerewolfClient.Forms
             this.txtMessage.Margin = new System.Windows.Forms.Padding(10);
             this.txtMessage.Multiline = true;
             this.txtMessage.Name = "txtMessage";
-            this.txtMessage.Size = new System.Drawing.Size(460, 44);
+            this.txtMessage.Size = new System.Drawing.Size(458, 42);
             this.txtMessage.TabIndex = 0;
             // 
             // btnSendChat
@@ -124,10 +124,10 @@ namespace WerewolfClient.Forms
             this.btnSendChat.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSendChat.Font = new System.Drawing.Font("Palatino Linotype", 11F, System.Drawing.FontStyle.Bold);
             this.btnSendChat.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.btnSendChat.Location = new System.Drawing.Point(468, 8);
+            this.btnSendChat.Location = new System.Drawing.Point(466, 8);
             this.btnSendChat.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnSendChat.Name = "btnSendChat";
-            this.btnSendChat.Size = new System.Drawing.Size(92, 44);
+            this.btnSendChat.Size = new System.Drawing.Size(92, 42);
             this.btnSendChat.TabIndex = 5;
             this.btnSendChat.Text = "Send";
             this.btnSendChat.UseVisualStyleBackColor = false;
@@ -166,7 +166,7 @@ namespace WerewolfClient.Forms
             this.btnLeaveRoom.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnLeaveRoom.Font = new System.Drawing.Font("Palatino Linotype", 12F, System.Drawing.FontStyle.Bold);
             this.btnLeaveRoom.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.btnLeaveRoom.Location = new System.Drawing.Point(600, 0);
+            this.btnLeaveRoom.Location = new System.Drawing.Point(598, 0);
             this.btnLeaveRoom.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnLeaveRoom.Name = "btnLeaveRoom";
             this.btnLeaveRoom.Size = new System.Drawing.Size(300, 68);
@@ -235,7 +235,7 @@ namespace WerewolfClient.Forms
             this.pnlChatInput.Controls.Add(this.txtMessage);
             this.pnlChatInput.Controls.Add(this.btnSendChat);
             this.pnlChatInput.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.pnlChatInput.Location = new System.Drawing.Point(15, 425);
+            this.pnlChatInput.Location = new System.Drawing.Point(15, 423);
             this.pnlChatInput.Name = "pnlChatInput";
             this.pnlChatInput.Padding = new System.Windows.Forms.Padding(8);
             this.pnlChatInput.Size = new System.Drawing.Size(568, 60);
@@ -246,9 +246,9 @@ namespace WerewolfClient.Forms
             this.label2.Dock = System.Windows.Forms.DockStyle.Top;
             this.label2.Font = new System.Drawing.Font("Palatino Linotype", 14F, System.Drawing.FontStyle.Bold);
             this.label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.label2.Location = new System.Drawing.Point(20, 20);
+            this.label2.Location = new System.Drawing.Point(15, 15);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(758, 35);
+            this.label2.Size = new System.Drawing.Size(568, 35);
             this.label2.TabIndex = 5;
             this.label2.Text = "CHAT";
             this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -272,9 +272,9 @@ namespace WerewolfClient.Forms
             this.label1.Dock = System.Windows.Forms.DockStyle.Top;
             this.label1.Font = new System.Drawing.Font("Palatino Linotype", 14F, System.Drawing.FontStyle.Bold);
             this.label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.label1.Location = new System.Drawing.Point(20, 20);
+            this.label1.Location = new System.Drawing.Point(15, 15);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(358, 35);
+            this.label1.Size = new System.Drawing.Size(268, 35);
             this.label1.TabIndex = 3;
             this.label1.Text = "PLAYERS";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -303,7 +303,7 @@ namespace WerewolfClient.Forms
             this.Controls.Add(this.pnlHeader);
             this.Font = new System.Drawing.Font("Palatino Linotype", 12F);
             this.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MaximizeBox = false;
             this.MinimizeBox = false;

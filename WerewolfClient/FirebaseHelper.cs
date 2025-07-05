@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using WerewolfClient.Models; 
+using WerewolfClient.Models;
 
 public class FirebaseHelper
 {
@@ -91,7 +91,7 @@ public class FirebaseHelper
             .AsObservable<Player>()
             .Subscribe(async playerEvent =>
             {
-                currentPlayers = await GetPlayers(gameId); 
+                currentPlayers = await GetPlayers(gameId);
                 callback(new List<Player>(currentPlayers));
             });
     }
@@ -106,7 +106,7 @@ public class FirebaseHelper
             MaxPlayers = maxPlayers,
             CreatedAt = DateTime.UtcNow,
             CreatorId = creatorId,
-            CurrentPhase = "night", 
+            CurrentPhase = "night",
             RoundNumber = 1,
             CurrentPlayerCount = 0,
             RoomId = serverRoomId,
@@ -140,7 +140,7 @@ public class FirebaseHelper
             .Child("players")
             .Child(playerId)
             .Child("Role")
-            .PutAsync($"\"{role}\""); 
+            .PutAsync($"\"{role}\"");
     }
 
     // Thêm log sự kiện game
@@ -156,7 +156,7 @@ public class FirebaseHelper
         await firebase
             .Child("gameLogs")
             .Child(gameId)
-            .PostAsync(gameLog); 
+            .PostAsync(gameLog);
     }
     public static async Task SaveUsernameAsync(string userId, string username, string email, string idToken)
     {
@@ -169,7 +169,7 @@ public class FirebaseHelper
         await firebaseClient
             .Child("users")
             .Child(userId)
-            .PutAsync(new { username = username, email = email }); 
+            .PutAsync(new { username = username, email = email });
     }
 
     public static async Task<string> GetUsernameAsync(string userId, string idToken)
@@ -216,9 +216,10 @@ public class FirebaseHelper
             .Child("players")
             .Child(werewolfId)
             .Child(nameof(Player.VotedFor))
-            .PutAsync($"\"{targetPlayerId}\""); 
+            .PutAsync($"\"{targetPlayerId}\"");
 
-        await AddGameLog(gameId, $"Sói đã chọn giết {target.Name}.", "night");
+        // ***SỬA ĐỔI***: Tạo log với tên cụ thể của mục tiêu
+        await AddGameLog(gameId, $"Sói đã chọn giết {target.Name}.", "night_action_detail");
     }
 
 
@@ -261,9 +262,10 @@ public class FirebaseHelper
             .Child("players")
             .Child(seerId)
             .Child(nameof(Player.CheckedPlayer))
-            .PutAsync(checkResult); 
+            .PutAsync(checkResult);
 
-        await AddGameLog(gameId, $"Tiên tri đã soi {targetPlayer.Name}.", "night");
+        // ***SỬA ĐỔI***: Tạo log với tên cụ thể của người được soi
+        await AddGameLog(gameId, $"Tiên tri đã soi {targetPlayer.Name}.", "night_action_detail");
         return checkResult;
     }
 
@@ -295,12 +297,13 @@ public class FirebaseHelper
 
         await firebase
             .Child("games").Child(gameId).Child("players").Child(witchId)
-            .Child(nameof(Player.HasUsedHealPotion)).PutAsync(true); 
+            .Child(nameof(Player.HasUsedHealPotion)).PutAsync(true);
         await firebase
             .Child("games").Child(gameId).Child("players").Child(targetPlayerId)
-            .Child(nameof(Player.IsProtectedByWitch)).PutAsync(true); 
+            .Child(nameof(Player.IsProtectedByWitch)).PutAsync(true);
 
-        await AddGameLog(gameId, $"Phù thủy đã dùng thuốc cứu cho {targetPlayer.Name}.", "night");
+        // ***SỬA ĐỔI***: Tạo log với tên cụ thể của người được cứu
+        await AddGameLog(gameId, $"Phù thủy đã dùng thuốc cứu cho {targetPlayer.Name}.", "night_action_detail");
     }
 
     public async Task WitchUseKillPotion(string gameId, string witchId, string targetPlayerId)
@@ -333,12 +336,13 @@ public class FirebaseHelper
 
         await firebase
             .Child("games").Child(gameId).Child("players").Child(witchId)
-            .Child(nameof(Player.HasUsedKillPotion)).PutAsync(true); // << LƯU Ý: Boolean là JSON hợp lệ
+            .Child(nameof(Player.HasUsedKillPotion)).PutAsync(true);
         await firebase
             .Child("games").Child(gameId).Child("players").Child(targetPlayerId)
-            .Child(nameof(Player.IsPoisonedByWitch)).PutAsync(true); // << LƯU Ý: Boolean là JSON hợp lệ
+            .Child(nameof(Player.IsPoisonedByWitch)).PutAsync(true);
 
-        await AddGameLog(gameId, $"Phù thủy đã dùng thuốc độc lên {targetPlayer.Name}.", "night");
+        // ***SỬA ĐỔI***: Tạo log với tên cụ thể của người bị độc
+        await AddGameLog(gameId, $"Phù thủy đã dùng thuốc độc lên {targetPlayer.Name}.", "night_action_detail");
     }
 
     // === BẢO VỆ (BODYGUARD) ===
@@ -370,7 +374,8 @@ public class FirebaseHelper
             .Child("games").Child(gameId).Child("players").Child(bodyguardId)
             .Child(nameof(Player.ProtectedPlayerId)).PutAsync($"\"{targetPlayerId}\"");
 
-        await AddGameLog(gameId, $"Bảo vệ {bodyguard.Name} đang bảo vệ {targetPlayer.Name}.", "night");
+        // ***SỬA ĐỔI***: Tạo log với tên cụ thể của người được bảo vệ
+        await AddGameLog(gameId, $"Bảo vệ {bodyguard.Name} đang bảo vệ {targetPlayer.Name}.", "night_action_detail");
     }
 
     // === THỢ SĂN (HUNTER) ===
@@ -399,12 +404,13 @@ public class FirebaseHelper
 
         await firebase
             .Child("games").Child(gameId).Child("players").Child(targetPlayerId)
-            .Child(nameof(Player.IsAlive)).PutAsync(false); 
+            .Child(nameof(Player.IsAlive)).PutAsync(false);
         await firebase
             .Child("games").Child(gameId).Child("players").Child(hunterId)
-            .Child(nameof(Player.CanShoot)).PutAsync(false); 
+            .Child(nameof(Player.CanShoot)).PutAsync(false);
 
-        await AddGameLog(gameId, $"Thợ săn đã bắn chết {targetPlayer.Name}!", "hunter_shot");
+        // ***SỬA ĐỔI***: Tạo log cái chết công khai
+        await AddGameLog(gameId, $"Thợ săn đã trả thù, bắn chết {targetPlayer.Name}!", "player_death");
         await CheckGameEndCondition(gameId);
     }
 
@@ -412,7 +418,7 @@ public class FirebaseHelper
     {
         await firebase
             .Child("games").Child(gameId).Child("players").Child(player.Id)
-            .PutAsync(player); 
+            .PutAsync(player);
 
         var game = await GetGame(gameId);
         if (game != null)
@@ -420,7 +426,7 @@ public class FirebaseHelper
             await firebase
                 .Child("games").Child(gameId)
                 .Child(nameof(Game.CurrentPlayerCount))
-                .PutAsync(game.CurrentPlayerCount + 1); 
+                .PutAsync(game.CurrentPlayerCount + 1);
         }
     }
 
@@ -473,15 +479,33 @@ public class FirebaseHelper
             {
                 [nameof(Game.CurrentPhase)] = nextPhase,
                 [nameof(Game.PhaseStartTime)] = DateTime.UtcNow.ToString("o"),
-                [nameof(Game.RoundNumber)] = newRoundNumber 
+                [nameof(Game.RoundNumber)] = newRoundNumber
             };
 
             await firebase
                 .Child("games")
                 .Child(gameId)
-                .PatchAsync(phaseUpdates); 
+                .PatchAsync(phaseUpdates);
 
-            await AddGameLog(gameId, $"Chuyển sang giai đoạn: {nextPhase} (Vòng {newRoundNumber}).", "system");
+            // ***SỬA ĐỔI***: Thêm log thông báo chuyển phase rõ ràng hơn
+            string phaseDisplayName = "";
+            switch (nextPhase.ToLower())
+            {
+                case "night":
+                    phaseDisplayName = (newRoundNumber == 1) ? "Đêm Đầu Tiên" : $"Đêm thứ {newRoundNumber}";
+                    break;
+                case "day_discussion":
+                    phaseDisplayName = $"Thảo Luận Sáng thứ {newRoundNumber}";
+                    break;
+                case "day_vote":
+                    phaseDisplayName = $"Bỏ Phiếu Sáng thứ {newRoundNumber}";
+                    break;
+                default:
+                    phaseDisplayName = nextPhase;
+                    break;
+            }
+            
+            await AddGameLog(gameId, $"=== CHUYỂN SANG GIAI ĐOẠN: {phaseDisplayName} ===", "system_phase_change");
 
             await CheckGameEndCondition(gameId);
             var game = await GetGame(gameId);
@@ -519,10 +543,12 @@ public class FirebaseHelper
 
             await firebase
                 .Child("games").Child(gameId).Child("players").Child(voterId)
-                .Child(nameof(Player.VotedForDay)).PutAsync($"\"{targetId}\""); 
+                .Child(nameof(Player.VotedForDay)).PutAsync($"\"{targetId}\"");
             await firebase
                 .Child("games").Child(gameId).Child("players").Child(voterId)
                 .Child(nameof(Player.HasVotedToday)).PutAsync(true);
+            
+            // ***SỬA ĐỔI***: Thêm log thông báo bỏ phiếu
             await AddGameLog(gameId, $"Người chơi {voter.Name} đã bỏ phiếu treo cổ {target.Name}.", "day_vote");
         }
         else if (voter != null && voter.HasVotedToday)
@@ -550,6 +576,21 @@ public class FirebaseHelper
                 .OrderByDescending(x => x.Count)
                 .ToList();
 
+            // ***SỬA ĐỔI***: Thêm log về số lượng phiếu bầu
+            if (voteCounts.Any())
+            {
+                await AddGameLog(gameId, $"Tổng số phiếu bầu hợp lệ: {voteCounts.Sum(v => v.Count)}", "day_vote_result");
+                
+                foreach (var vote in voteCounts)
+                {
+                    await AddGameLog(gameId, $"{vote.TargetName}: {vote.Count} phiếu", "day_vote_result");
+                }
+            }
+            else
+            {
+                await AddGameLog(gameId, "Không có phiếu bầu hợp lệ nào.", "day_vote_result");
+            }
+
             Dictionary<string, object> updates = new Dictionary<string, object>();
             string logMessage = "Không có ai bị treo cổ (không có phiếu bầu hợp lệ hoặc hòa phiếu).";
 
@@ -566,7 +607,9 @@ public class FirebaseHelper
                     {
                         updates[$"players/{executedPlayerId}/{nameof(Player.IsAlive)}"] = false;
                         logMessage = $"Người chơi {executedPlayer.Name} đã bị treo cổ theo kết quả bỏ phiếu.";
-                        await AddGameLog(gameId, logMessage, "day_vote_result");
+
+                        // ***SỬA ĐỔI***: Tạo log cái chết công khai với tên cụ thể
+                        await AddGameLog(gameId, logMessage, "player_death");
 
                         if (executedPlayer.Role == "hunter")
                         {
@@ -612,8 +655,8 @@ public class FirebaseHelper
         {
             var players = await GetPlayers(gameId);
             Dictionary<string, object> updates = new Dictionary<string, object>();
-            List<string> killedTonightNames = new List<string>();
 
+            // === Xác định các mục tiêu ===
             string werewolfTargetId = null;
             var werewolfVotesGroups = players
                 .Where(p => p.IsAlive && p.Role == "werewolf" && !string.IsNullOrEmpty(p.VotedFor))
@@ -631,107 +674,169 @@ public class FirebaseHelper
                 else
                 {
                     werewolfTargetId = topVoteGroup.Key;
+                    // ***SỬA ĐỔI***: Thêm log về mục tiêu của Sói
+                    var target = players.FirstOrDefault(p => p.Id == werewolfTargetId);
+                    if (target != null)
+                    {
+                        await AddGameLog(gameId, $"Sói đã chọn {target.Name} làm mục tiêu.", "night_result");
+                    }
                 }
+            }
+            else
+            {
+                await AddGameLog(gameId, "Sói không thực hiện hành động.", "night_result");
             }
 
             string bodyguardProtectedId = players.FirstOrDefault(p => p.IsAlive && p.Role == "bodyguard" && !string.IsNullOrEmpty(p.ProtectedPlayerId))?.ProtectedPlayerId;
 
-            var witch = players.FirstOrDefault(p => p.IsAlive && p.Role == "witch");
-            string witchHealTargetId = null;
-            string witchPoisonTargetId = null;
+            // ***SỬA ĐỔI***: Thêm log về hành động của Bảo vệ
+            if (!string.IsNullOrEmpty(bodyguardProtectedId))
+            {
+                var protectedPlayer = players.FirstOrDefault(p => p.Id == bodyguardProtectedId);
+                if (protectedPlayer != null)
+                {
+                    await AddGameLog(gameId, $"Bảo vệ đã bảo vệ {protectedPlayer.Name}.", "night_result");
+                }
+            }
+            else
+            {
+                await AddGameLog(gameId, "Bảo vệ không thực hiện hành động.", "night_result");
+            }
 
+            var witch = players.FirstOrDefault(p => p.IsAlive && p.Role == "witch");
+            string witchPoisonTargetId = null;
+            if (witch != null && witch.HasUsedKillPotion)
+            {
+                // Tìm mục tiêu bị độc bằng cách kiểm tra cờ IsPoisonedByWitch
+                witchPoisonTargetId = players.FirstOrDefault(p => p.IsAlive && p.IsPoisonedByWitch)?.Id;
+            }
+
+            // ***SỬA ĐỔI***: Thêm log về hành động của Phù thủy
             if (witch != null)
             {
                 if (witch.HasUsedHealPotion)
                 {
-                    witchHealTargetId = players.FirstOrDefault(p => p.IsAlive && p.IsProtectedByWitch)?.Id;
+                    await AddGameLog(gameId, "Phù thủy đã sử dụng thuốc cứu.", "night_result");
                 }
+                else
+                {
+                    await AddGameLog(gameId, "Phù thủy không sử dụng thuốc cứu.", "night_result");
+                }
+
                 if (witch.HasUsedKillPotion)
                 {
-                    witchPoisonTargetId = players.FirstOrDefault(p => p.IsAlive && p.IsPoisonedByWitch && p.Id != witch.Id)?.Id;
-                }
-            }
-            List<string> diedThisNightPlayerIds = new List<string>();
-
-            if (witchPoisonTargetId != null)
-            {
-                if (witchPoisonTargetId == bodyguardProtectedId)
-                {
-                    await AddGameLog(gameId, $"{players.FirstOrDefault(p => p.Id == witchPoisonTargetId)?.Name} bị Phù thủy đầu độc nhưng được Bảo vệ cứu mạng!", "night_result");
+                    var poisonedTarget = players.FirstOrDefault(p => p.Id == witchPoisonTargetId);
+                    if (poisonedTarget != null)
+                    {
+                        await AddGameLog(gameId, $"Phù thủy đã sử dụng thuốc độc lên {poisonedTarget.Name}.", "night_result");
+                    }
                 }
                 else
                 {
-                    diedThisNightPlayerIds.Add(witchPoisonTargetId);
+                    await AddGameLog(gameId, "Phù thủy không sử dụng thuốc độc.", "night_result");
                 }
-            }
-
-            if (werewolfTargetId != null && !diedThisNightPlayerIds.Contains(werewolfTargetId))
-            {
-                bool savedByBodyguard = (werewolfTargetId == bodyguardProtectedId);
-                bool savedByWitchHeal = (werewolfTargetId == witchHealTargetId && witch != null && witch.HasUsedHealPotion && players.FirstOrDefault(p => p.Id == werewolfTargetId)?.IsProtectedByWitch == true);
-
-                if (savedByBodyguard)
-                {
-                    await AddGameLog(gameId, $"{players.FirstOrDefault(p => p.Id == werewolfTargetId)?.Name} bị Sói tấn công nhưng được Bảo vệ cứu mạng!", "night_result");
-                }
-                else if (savedByWitchHeal)
-                {
-                    await AddGameLog(gameId, $"{players.FirstOrDefault(p => p.Id == werewolfTargetId)?.Name} bị Sói tấn công nhưng được Phù thủy cứu!", "night_result");
-                }
-                else
-                {
-                    diedThisNightPlayerIds.Add(werewolfTargetId);
-                }
-            }
-            else if (werewolfTargetId != null && diedThisNightPlayerIds.Contains(werewolfTargetId))
-            {
-                await AddGameLog(gameId, $"Sói nhắm vào {players.FirstOrDefault(p => p.Id == werewolfTargetId)?.Name} nhưng người này đã chết vì lý do khác.", "night_result");
-            }
-            else if (werewolfTargetId == null && werewolfVotesGroups.Any())
-            {
-                // Hòa phiếu sói đã log
             }
             else
             {
-                await AddGameLog(gameId, "Đêm nay Sói không cắn ai.", "night_result");
+                await AddGameLog(gameId, "Không có Phù thủy trong game.", "night_result");
             }
 
+            // === Xử lý các cái chết ===
+            List<string> diedThisNightPlayerIds = new List<string>();
+
+            // 1. Phù thủy đầu độc
+            if (witchPoisonTargetId != null)
+            {
+                var target = players.FirstOrDefault(p => p.Id == witchPoisonTargetId);
+                if (target != null)
+                {
+                    if (witchPoisonTargetId == bodyguardProtectedId)
+                    {
+                        await AddGameLog(gameId, $"{target.Name} bị Phù thủy đầu độc nhưng được Bảo vệ cứu mạng!", "night_result");
+                    }
+                    else
+                    {
+                        diedThisNightPlayerIds.Add(witchPoisonTargetId);
+                        // ***SỬA ĐỔI***: Tạo log cái chết công khai với tên cụ thể
+                        await AddGameLog(gameId, $"{target.Name} đã chết vì trúng độc của Phù thủy.", "player_death");
+                    }
+                }
+            }
+
+            // 2. Sói cắn
+            if (werewolfTargetId != null && !diedThisNightPlayerIds.Contains(werewolfTargetId))
+            {
+                var target = players.FirstOrDefault(p => p.Id == werewolfTargetId);
+                if (target != null)
+                {
+                    // Kiểm tra xem người bị Sói cắn có được Phù thủy cứu hay không
+                    bool savedByWitchHeal = players.Any(p => p.Id == werewolfTargetId && p.IsProtectedByWitch);
+
+                    if (werewolfTargetId == bodyguardProtectedId)
+                    {
+                        await AddGameLog(gameId, $"{target.Name} bị Sói tấn công nhưng được Bảo vệ cứu mạng!", "night_result");
+                    }
+                    else if (savedByWitchHeal)
+                    {
+                        await AddGameLog(gameId, $"{target.Name} bị Sói tấn công nhưng được Phù thủy cứu!", "night_result");
+                    }
+                    else
+                    {
+                        diedThisNightPlayerIds.Add(werewolfTargetId);
+                        // ***SỬA ĐỔI***: Tạo log cái chết công khai với tên cụ thể
+                        await AddGameLog(gameId, $"{target.Name} đã bị Sói cắn chết.", "player_death");
+                    }
+                }
+            }
+
+            // === Cập nhật trạng thái người chơi và dọn dẹp ===
             foreach (var deadPlayerId in diedThisNightPlayerIds.Distinct())
             {
                 updates[$"players/{deadPlayerId}/{nameof(Player.IsAlive)}"] = false;
-                var deadPlayerName = players.FirstOrDefault(p => p.Id == deadPlayerId)?.Name;
-                if (!string.IsNullOrEmpty(deadPlayerName)) killedTonightNames.Add(deadPlayerName);
             }
 
+            // Dọn dẹp hành động đêm cho tất cả người chơi
             foreach (var player in players)
             {
                 updates[$"players/{player.Id}/{nameof(Player.VotedFor)}"] = null;
                 updates[$"players/{player.Id}/{nameof(Player.CheckedPlayer)}"] = null;
                 updates[$"players/{player.Id}/{nameof(Player.IsProtectedByWitch)}"] = false;
                 updates[$"players/{player.Id}/{nameof(Player.IsPoisonedByWitch)}"] = false;
-                updates[$"players/{player.Id}/{nameof(Player.NightActionTarget)}"] = null;
-                updates[$"players/{player.Id}/{nameof(Player.NightActionType)}"] = null;
 
                 if (player.Role == "bodyguard")
                 {
+                    // Cập nhật người được bảo vệ đêm trước và reset người được bảo vệ đêm nay
                     updates[$"players/{player.Id}/{nameof(Player.LastProtectedPlayerId)}"] = player.ProtectedPlayerId;
                     updates[$"players/{player.Id}/{nameof(Player.ProtectedPlayerId)}"] = null;
                 }
             }
 
+            // Gửi tất cả các cập nhật lên Firebase một lần
             if (updates.Any())
             {
                 await firebase.Child("games").Child(gameId).PatchAsync(updates);
             }
 
-            if (killedTonightNames.Any())
+            // Thông báo tóm tắt cuối đêm
+            if (!diedThisNightPlayerIds.Any() && werewolfTargetId == null && witchPoisonTargetId == null)
             {
-                await AddGameLog(gameId, "Những người đã chết đêm nay: " + string.Join(", ", killedTonightNames.Distinct()) + ".", "night_summary");
+                await AddGameLog(gameId, "Một đêm yên bình, không có ai chết.", "night_summary");
             }
             else
             {
-                await AddGameLog(gameId, "Không có ai chết đêm nay.", "night_summary");
+                // ***SỬA ĐỔI***: Thêm thông báo tóm tắt chi tiết hơn
+                if (diedThisNightPlayerIds.Any())
+                {
+                    var deadPlayers = players.Where(p => diedThisNightPlayerIds.Contains(p.Id)).ToList();
+                    var deadPlayerNames = string.Join(", ", deadPlayers.Select(p => p.Name));
+                    await AddGameLog(gameId, $"Kết thúc đêm: {deadPlayerNames} đã chết.", "night_summary");
+                }
+                else
+                {
+                    await AddGameLog(gameId, "Màn đêm đã qua.", "night_summary");
+                }
             }
+
 
             await CheckGameEndCondition(gameId);
         }
@@ -770,7 +875,7 @@ public class FirebaseHelper
                 {
                     await firebase
                         .Child("games").Child(gameId).Child(nameof(Game.Status))
-                        .PutAsync($"\"{newStatus}\""); 
+                        .PutAsync($"\"{newStatus}\"");
                     await AddGameLog(gameId, $"Trò chơi kết thúc! {newStatus.Replace("_", " ").ToUpper()}", "game_end");
                 }
             }

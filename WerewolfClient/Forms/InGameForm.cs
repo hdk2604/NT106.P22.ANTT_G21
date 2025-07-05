@@ -84,7 +84,7 @@ namespace WerewolfClient.Forms
             // ConnectToServer(existingClient);
             this.WindowState = FormWindowState.Maximized;
             this.AutoScaleMode = AutoScaleMode.Dpi;
-            
+
             // Ẩn form trong quá trình khởi tạo
             this.Visible = false;
             this.Opacity = 0;
@@ -95,7 +95,7 @@ namespace WerewolfClient.Forms
         private string placeholderText = "Nhập tin nhắn của bạn";
         private async void Form1_Load(object sender, EventArgs e)
         {
-            try 
+            try
             {
                 this.actionButton = new System.Windows.Forms.Button();
                 this.actionButton.Size = new System.Drawing.Size(130, 40);
@@ -226,6 +226,12 @@ namespace WerewolfClient.Forms
                 }
                 // BẮT ĐẦU POLLING PHASE SAU KHI FORM ĐÃ LOAD VÀ gameId ĐÃ ĐƯỢC SET
                 StartPhasePolling();
+                
+                // ***SỬA ĐỔI***: Setup listener cho game logs
+                SetupGameLogListener();
+                
+                // ***SỬA ĐỔI***: Load các game log cũ
+                await LoadExistingGameLogs();
             }
             catch (Exception ex)
             {
@@ -514,13 +520,10 @@ namespace WerewolfClient.Forms
 
             if (this.IsDisposed || !this.IsHandleCreated || richTextBox1 == null || richTextBox1.IsDisposed) return;
 
+            // ***SỬA ĐỔI***: Chỉ lọc các log không cần thiết, giữ lại các log quan trọng
             List<string> phasesToIgnoreInChat = new List<string>
             {
-                "night_action_detail",
-                "seer_action_detail",
-                "witch_action_detail",
-                "bodyguard_action_detail",
-                "game_end"
+                "game_end" // Chỉ ẩn log kết thúc game
             };
 
             if (logEntry.Phase != null && phasesToIgnoreInChat.Contains(logEntry.Phase.ToLower()))
@@ -529,12 +532,17 @@ namespace WerewolfClient.Forms
                 return;
             }
 
-            // Luôn sử dụng thời gian hiện tại
             string formattedMessage = $"[{DateTime.Now:HH:mm:ss}] {logEntry.Message}\n";
             Font logFont = new Font(richTextBox1.Font, FontStyle.Italic);
             Color logColor = Color.LightSteelBlue;
 
-            if (logEntry.Phase == "night_summary" || logEntry.Phase == "day_vote_result" || logEntry.Phase == "hunter_shot")
+            // ***SỬA ĐỔI***: Thêm định dạng cho các loại log mới và đã có
+            if (logEntry.Phase == "player_death") // Log cho người chơi chết
+            {
+                logColor = Color.Tomato; // Màu đỏ
+                logFont = new Font(richTextBox1.Font, FontStyle.Bold | FontStyle.Italic);
+            }
+            else if (logEntry.Phase == "night_summary" || logEntry.Phase == "day_vote_result")
             {
                 logColor = Color.Gold;
                 logFont = new Font(richTextBox1.Font, FontStyle.Bold | FontStyle.Italic);
@@ -559,6 +567,16 @@ namespace WerewolfClient.Forms
             else if (logEntry.Phase == "night_result")
             {
                 logColor = Color.SkyBlue;
+            }
+            else if (logEntry.Phase == "night_action_detail") // ***SỬA ĐỔI***: Thêm định dạng cho log hành động đêm
+            {
+                logColor = Color.LightCyan;
+                logFont = new Font(richTextBox1.Font, FontStyle.Italic);
+            }
+            else if (logEntry.Phase == "day_vote") // ***SỬA ĐỔI***: Thêm định dạng cho log bỏ phiếu
+            {
+                logColor = Color.LightYellow;
+                logFont = new Font(richTextBox1.Font, FontStyle.Italic);
             }
 
             if (richTextBox1.InvokeRequired)
@@ -812,7 +830,7 @@ namespace WerewolfClient.Forms
             }
 
             if (currentGameData != null)
-            {                
+            {
                 // Debug: Check for both PhaseStartTime and phaseStartTime
                 var type = currentGameData.GetType();
                 var propLower = type.GetProperty("phaseStartTime");
@@ -843,7 +861,7 @@ namespace WerewolfClient.Forms
             isProcessingTimerExpiration = false;
 
             // Kiểm tra trạng thái kết thúc game
-            if (currentGameData != null && 
+            if (currentGameData != null &&
                 (currentGameData.Status == "villagers_win" || currentGameData.Status == "werewolves_win" || currentGameData.Status == "ended"))
             {
                 if (!isGameReallyOver)
@@ -854,7 +872,7 @@ namespace WerewolfClient.Forms
                     {
                         phaseTimerUi.Stop();
                     }
-                    
+
                     if (labelTimer != null && !labelTimer.IsDisposed)
                     {
                         if (labelTimer.InvokeRequired)
@@ -954,15 +972,15 @@ namespace WerewolfClient.Forms
             {
                 // Stop the timer first
                 phaseTimerUi.Stop();
-                
+
                 // Reset timer state
                 isProcessingTimerExpiration = false;
-                
+
                 // Update the timer display immediately
                 TimeSpan elapsed = DateTime.UtcNow - phaseStartTimeUtc;
                 int timeLeft = Math.Max(0, phaseDurationSeconds - (int)elapsed.TotalSeconds);
                 UpdateTimerLabelUi(timeLeft);
-                
+
                 // Only start the timer if there's time left
                 if (timeLeft > 0)
                 {
@@ -990,7 +1008,7 @@ namespace WerewolfClient.Forms
             {
                 // Stop the timer first to prevent multiple triggers
                 phaseTimerUi.Stop();
-                
+
                 // Only process timer expiration if we haven't already started processing
                 if (!isProcessingTimerExpiration)
                 {
@@ -1008,7 +1026,7 @@ namespace WerewolfClient.Forms
                         var game = await fb.GetGame(gameId);
 
                         if (game != null)
-                        {                    
+                        {
                             if (game.Status == "villagers_win" || game.Status == "werewolves_win" || game.Status == "ended")
                             {
                                 ProcessGameStatusUpdate(game.Status);
@@ -1019,8 +1037,6 @@ namespace WerewolfClient.Forms
                             }
                             else
                             {
-                                // For non-host players, just wait for the host to update the phase
-                                // Don't restart the timer, just wait for the next phase update
                                 DisplayGameLog(new GameLog
                                 {
                                     Timestamp = DateTime.UtcNow,
@@ -1289,19 +1305,12 @@ namespace WerewolfClient.Forms
                 // Only call NextPhase, do not update PhaseStartTime manually
                 string gameEndStatus = await firebaseHelper.NextPhase(gameId, currentPhaseStrFromFirebase);
 
-                if (IsHandleCreated && panelLoadingOverlay != null && !isGameReallyOver) 
+                if (IsHandleCreated && panelLoadingOverlay != null && !isGameReallyOver)
                 {
                     panelLoadingOverlay.Visible = false;
                 }
 
-                // Do NOT force update phase and timer here. Wait for Firebase event.
-                // var updatedGame = await firebaseHelper.GetGame(gameId);
-                // if (updatedGame != null)
-                // {
-                //     MessageBox.Show($"Forcing phase update with new data:\nPhase: {updatedGame.CurrentPhase}\nStartTime: {updatedGame.PhaseStartTime}", "Debug Force Update");
-                //     await UpdatePhaseAndTimerFromFirebase(updatedGame.CurrentPhase, updatedGame.PhaseStartTime);
-                // }
-            }   
+            }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error in NextPhase_Host: {ex.Message}\n{ex.StackTrace}", "Debug Error");
@@ -1543,6 +1552,74 @@ namespace WerewolfClient.Forms
                 tcpClient = null;
             }
             isServerConnected = false;
+        }
+
+        // ***SỬA ĐỔI***: Thêm method để setup listener cho game logs
+        private void SetupGameLogListener()
+        {
+            if (firebaseGameLogListener != null)
+            {
+                firebaseGameLogListener.Dispose();
+                firebaseGameLogListener = null;
+            }
+
+            if (string.IsNullOrEmpty(gameId)) return;
+
+            try
+            {
+                var firebase = new FirebaseClient(
+                    "https://werewolf-d83dd-default-rtdb.asia-southeast1.firebasedatabase.app/",
+                    new FirebaseOptions { AuthTokenAsyncFactory = () => Task.FromResult(CurrentUserManager.CurrentUser?.IdToken) });
+
+                firebaseGameLogListener = firebase
+                    .Child("gameLogs")
+                    .Child(gameId)
+                    .AsObservable<GameLog>()
+                    .Subscribe(gameLogEvent =>
+                    {
+                        if (gameLogEvent.Object != null && !this.IsDisposed && this.IsHandleCreated)
+                        {
+                            // Hiển thị log trong chat
+                            DisplayGameLog(gameLogEvent.Object);
+                        }
+                    });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error setting up game log listener: {ex.Message}");
+            }
+        }
+
+        // ***SỬA ĐỔI***: Thêm method để load các game log cũ
+        private async Task LoadExistingGameLogs()
+        {
+            if (string.IsNullOrEmpty(gameId)) return;
+
+            try
+            {
+                var firebase = new FirebaseClient(
+                    "https://werewolf-d83dd-default-rtdb.asia-southeast1.firebasedatabase.app/",
+                    new FirebaseOptions { AuthTokenAsyncFactory = () => Task.FromResult(CurrentUserManager.CurrentUser?.IdToken) });
+
+                var existingLogs = await firebase
+                    .Child("gameLogs")
+                    .Child(gameId)
+                    .OrderByKey()
+                    .LimitToLast(50) // Chỉ load 50 log gần nhất
+                    .OnceAsync<GameLog>();
+
+                if (existingLogs != null && existingLogs.Any())
+                {
+                    foreach (var log in existingLogs.OrderBy(l => l.Object.Timestamp))
+                    {
+                        DisplayGameLog(log.Object);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading existing game logs: {ex.Message}");
+            }
         }
     }
 }

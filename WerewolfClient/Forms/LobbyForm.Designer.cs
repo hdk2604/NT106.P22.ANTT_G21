@@ -21,12 +21,8 @@ namespace WerewolfClient.Forms
             this.panel2 = new System.Windows.Forms.Panel();
             this.lblVersion = new System.Windows.Forms.Label();
             this.saveFileDialog1 = new System.Windows.Forms.SaveFileDialog();
-            this.btnCreateRoom.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            this.btnFindRoom.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            this.btnRoles.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            this.btnSetting.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            this.gameName.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-
+            this.btnClose = new System.Windows.Forms.Button();
+            this.btnMinimize = new System.Windows.Forms.Button();
             this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.panel2.SuspendLayout();
@@ -34,6 +30,7 @@ namespace WerewolfClient.Forms
             // 
             // btnCreateRoom
             // 
+            this.btnCreateRoom.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCreateRoom.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnCreateRoom.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnCreateRoom.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
@@ -43,7 +40,7 @@ namespace WerewolfClient.Forms
             this.btnCreateRoom.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnCreateRoom.Font = new System.Drawing.Font("Palatino Linotype", 20F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnCreateRoom.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.btnCreateRoom.Location = new System.Drawing.Point(1113, 300);
+            this.btnCreateRoom.Location = new System.Drawing.Point(2235, 300);
             this.btnCreateRoom.Name = "btnCreateRoom";
             this.btnCreateRoom.Size = new System.Drawing.Size(375, 92);
             this.btnCreateRoom.TabIndex = 0;
@@ -53,6 +50,7 @@ namespace WerewolfClient.Forms
             // 
             // btnFindRoom
             // 
+            this.btnFindRoom.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnFindRoom.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnFindRoom.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnFindRoom.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
@@ -62,7 +60,7 @@ namespace WerewolfClient.Forms
             this.btnFindRoom.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnFindRoom.Font = new System.Drawing.Font("Palatino Linotype", 20F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnFindRoom.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.btnFindRoom.Location = new System.Drawing.Point(1113, 423);
+            this.btnFindRoom.Location = new System.Drawing.Point(2235, 423);
             this.btnFindRoom.Name = "btnFindRoom";
             this.btnFindRoom.Size = new System.Drawing.Size(375, 92);
             this.btnFindRoom.TabIndex = 0;
@@ -72,11 +70,12 @@ namespace WerewolfClient.Forms
             // 
             // gameName
             // 
+            this.gameName.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.gameName.AutoSize = true;
             this.gameName.BackColor = System.Drawing.Color.Transparent;
             this.gameName.Font = new System.Drawing.Font("Palatino Linotype", 48F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.gameName.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(180)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.gameName.Location = new System.Drawing.Point(983, 147);
+            this.gameName.Location = new System.Drawing.Point(2105, 147);
             this.gameName.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.gameName.Name = "gameName";
             this.gameName.Size = new System.Drawing.Size(624, 129);
@@ -85,6 +84,7 @@ namespace WerewolfClient.Forms
             // 
             // btnSetting
             // 
+            this.btnSetting.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnSetting.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnSetting.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnSetting.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
@@ -94,7 +94,7 @@ namespace WerewolfClient.Forms
             this.btnSetting.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSetting.Font = new System.Drawing.Font("Palatino Linotype", 20F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSetting.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.btnSetting.Location = new System.Drawing.Point(1113, 669);
+            this.btnSetting.Location = new System.Drawing.Point(2235, 669);
             this.btnSetting.Name = "btnSetting";
             this.btnSetting.Size = new System.Drawing.Size(375, 92);
             this.btnSetting.TabIndex = 2;
@@ -103,6 +103,7 @@ namespace WerewolfClient.Forms
             // 
             // btnRoles
             // 
+            this.btnRoles.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnRoles.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.btnRoles.Cursor = System.Windows.Forms.Cursors.Hand;
             this.btnRoles.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
@@ -112,7 +113,7 @@ namespace WerewolfClient.Forms
             this.btnRoles.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnRoles.Font = new System.Drawing.Font("Palatino Linotype", 20F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnRoles.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(200)))), ((int)(((byte)(200)))));
-            this.btnRoles.Location = new System.Drawing.Point(1113, 546);
+            this.btnRoles.Location = new System.Drawing.Point(2235, 546);
             this.btnRoles.Name = "btnRoles";
             this.btnRoles.Size = new System.Drawing.Size(375, 92);
             this.btnRoles.TabIndex = 3;
@@ -137,10 +138,10 @@ namespace WerewolfClient.Forms
             // pictureBox1
             // 
             this.pictureBox1.Image = global::WerewolfClient.Properties.Resources._1329565;
-            this.pictureBox1.Location = new System.Drawing.Point(251, 46);
+            this.pictureBox1.Location = new System.Drawing.Point(271, 58);
             this.pictureBox1.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(180, 185);
+            this.pictureBox1.Size = new System.Drawing.Size(160, 173);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox1.TabIndex = 3;
             this.pictureBox1.TabStop = false;
@@ -208,6 +209,42 @@ namespace WerewolfClient.Forms
             this.lblVersion.TabIndex = 0;
             this.lblVersion.Text = "Version 1.0.0.0";
             // 
+            // btnClose
+            // 
+            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnClose.BackColor = System.Drawing.Color.Brown;
+            this.btnClose.FlatAppearance.BorderSize = 0;
+            this.btnClose.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.btnClose.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
+            this.btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClose.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Bold);
+            this.btnClose.ForeColor = System.Drawing.Color.White;
+            this.btnClose.Location = new System.Drawing.Point(1327, 12);
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(50, 50);
+            this.btnClose.TabIndex = 6;
+            this.btnClose.Text = "X";
+            this.btnClose.UseVisualStyleBackColor = false;
+            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
+            // 
+            // btnMinimize
+            // 
+            this.btnMinimize.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnMinimize.BackColor = System.Drawing.Color.Brown;
+            this.btnMinimize.FlatAppearance.BorderSize = 0;
+            this.btnMinimize.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(150)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
+            this.btnMinimize.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(100)))), ((int)(((byte)(20)))), ((int)(((byte)(20)))));
+            this.btnMinimize.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnMinimize.Font = new System.Drawing.Font("Microsoft Sans Serif", 14F, System.Drawing.FontStyle.Bold);
+            this.btnMinimize.ForeColor = System.Drawing.Color.White;
+            this.btnMinimize.Location = new System.Drawing.Point(1259, 12);
+            this.btnMinimize.Name = "btnMinimize";
+            this.btnMinimize.Size = new System.Drawing.Size(50, 50);
+            this.btnMinimize.TabIndex = 7;
+            this.btnMinimize.Text = "-";
+            this.btnMinimize.UseVisualStyleBackColor = false;
+            this.btnMinimize.Click += new System.EventHandler(this.btnMinimize_Click);
+            // 
             // LobbyForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
@@ -215,6 +252,9 @@ namespace WerewolfClient.Forms
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(15)))), ((int)(((byte)(15)))), ((int)(((byte)(15)))));
             this.BackgroundImage = ((System.Drawing.Image)(resources.GetObject("$this.BackgroundImage")));
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.ClientSize = new System.Drawing.Size(1400, 800);
+            this.Controls.Add(this.btnMinimize);
+            this.Controls.Add(this.btnClose);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.btnRoles);
@@ -224,7 +264,7 @@ namespace WerewolfClient.Forms
             this.Controls.Add(this.btnCreateRoom);
             this.DoubleBuffered = true;
             this.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
             this.MaximizeBox = false;
             this.Name = "LobbyForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
@@ -252,5 +292,7 @@ namespace WerewolfClient.Forms
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.Label lblVersion;
         private SaveFileDialog saveFileDialog1;
+        private Button btnClose;
+        private Button btnMinimize;
     }
 }

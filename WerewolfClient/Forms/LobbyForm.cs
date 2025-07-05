@@ -238,5 +238,18 @@ namespace WerewolfClient.Forms
         {
             Application.Exit();
         }
+
+        private void btnClose_Click(object sender, EventArgs e)
+        {
+            // Đóng ứng dụng
+            Application.Exit();
+
+        }
+
+        private void btnMinimize_Click(object sender, EventArgs e)
+        {
+            // Thu nhỏ cửa sổ xuống thanh taskbar
+            this.WindowState = FormWindowState.Minimized;
+        }
     }
 }

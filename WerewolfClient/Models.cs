@@ -1,12 +1,4 @@
-﻿// E:\Ki 4\Lap trinh mang\Project\NT106.P22.ANTT_G21\WerewolfClient\Models.cs
-// [Content of Models.cs with PhaseDuration and WaitingForHunterShot in Game class]
-// This is the version from the previous correct answer.
-// Make sure it includes:
-// public int? PhaseDuration { get; set; } 
-// public bool WaitingForHunterShot { get; set; } = false;
-// inside the Game class.
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
