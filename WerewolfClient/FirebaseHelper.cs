@@ -505,7 +505,7 @@ public class FirebaseHelper
                     break;
             }
             
-            await AddGameLog(gameId, $"=== CHUYỂN SANG GIAI ĐOẠN: {phaseDisplayName} ===", "system_phase_change");
+            //await AddGameLog(gameId, $"=== CHUYỂN SANG GIAI ĐOẠN: {phaseDisplayName} ===", "system_phase_change");
 
             await CheckGameEndCondition(gameId);
             var game = await GetGame(gameId);
