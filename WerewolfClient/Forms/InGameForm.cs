@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using Firebase.Database;
-using WerewolfClient.Models;
+using WerewolfClient.Models; // Đảm bảo bạn có class Player và GameLog ở đây
 using System.Threading.Tasks;
 using System.Text;
 using System.Threading;
@@ -62,9 +62,9 @@ namespace WerewolfClient.Forms
         private string currentActionButtonText;
         private System.Threading.CancellationTokenSource _cancellationTokenSource;
         private Task _receivingTask;
-        private IDisposable firebasePlayersListener;
+        private IDisposable firebasePlayersListener; // <-- Listener chung cho tất cả players
         private System.Windows.Forms.Timer _updatePlayersDisplayDebounceTimer;
-        private const int UpdatePlayersDisplayDebounceTimeMs = 300;
+        private const int UpdatePlayersDisplayDebounceTimeMs = 500; // Tăng thời gian debounce
         private IDisposable firebaseGameLogListener;
         private int currentDay = 1;
         private bool isGameReallyOver = false;
@@ -72,6 +72,11 @@ namespace WerewolfClient.Forms
         private System.Windows.Forms.Timer phasePollingTimer;
         private string lastKnownPhase = null;
         private string lastKnownPhaseStartTime = null;
+
+        // ***THÊM/KIỂM TRA***: Biến cờ để kiểm soát thông báo chết
+        private bool hasDisplayedDeathMessage = false;
+        private System.Windows.Forms.Timer deathCheckTimer;
+        private bool isUpdatingDisplay = false; // Cờ để tránh update đồng thời
 
         public InGameForm(List<string> playerNamesParam, TcpClient existingClient = null)
         {
@@ -81,13 +86,15 @@ namespace WerewolfClient.Forms
             Load += new System.EventHandler(this.Form1_Load);
             tableLayoutPanel1.Click += new System.EventHandler(this.TableLayoutPanel1_Click);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.InGameForm_FormClosing);
-            // ConnectToServer(existingClient);
             this.WindowState = FormWindowState.Maximized;
             this.AutoScaleMode = AutoScaleMode.Dpi;
 
-            // Ẩn form trong quá trình khởi tạo
             this.Visible = false;
             this.Opacity = 0;
+
+            // Debug: Kiểm tra DeadIcon có được load đúng không
+            Console.WriteLine($"DIAGNOSTIC: DeadIcon loaded: {Properties.Resources.DeadIcon != null}");
+            Console.WriteLine($"DIAGNOSTIC: roleIcons['dead'] loaded: {roleIcons.ContainsKey("dead") && roleIcons["dead"] != null}");
         }
 
         public InGameForm() : this(new List<string>()) { }
@@ -107,10 +114,9 @@ namespace WerewolfClient.Forms
                 this.actionButton.ForeColor = System.Drawing.Color.White;
                 this.actionButton.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
                 this.actionButton.Name = "playerActionButton";
-                this.actionButton.Cursor = System.Windows.Forms.Cursors.Hand;
                 this.Controls.Add(this.actionButton);
                 this.actionButton.BringToFront();
-                // co giãn fit với màn hình
+
                 panelLeft.Dock = DockStyle.Left;
                 tableLayoutPanel1.Dock = DockStyle.Fill;
                 panelLoadingOverlay.Dock = DockStyle.Fill;
@@ -136,7 +142,6 @@ namespace WerewolfClient.Forms
                 labelTimer.Text = "Đang chờ...";
                 SetPlaceholder();
 
-                // Gỡ bỏ các event handlers cũ trước khi thêm mới
                 this.richTextBox2.Enter -= this.richTextBox2_Enter;
                 this.richTextBox2.Leave -= this.richTextBox2_Leave;
                 this.button1.Click -= this.button1_Click;
@@ -144,7 +149,6 @@ namespace WerewolfClient.Forms
                 this.btnRole.Click -= this.btnRole_Click;
                 this.btnQuit.Click -= this.BtnQuit_Click;
 
-                // Thêm lại các event handlers
                 this.richTextBox2.Enter += this.richTextBox2_Enter;
                 this.richTextBox2.Leave += this.richTextBox2_Leave;
                 this.button1.Click += this.button1_Click;
@@ -157,7 +161,7 @@ namespace WerewolfClient.Forms
                 _updatePlayersDisplayDebounceTimer.Tick += async (s, ev) =>
                 {
                     _updatePlayersDisplayDebounceTimer.Stop();
-                    if (this.IsHandleCreated && !this.IsDisposed && isGameDataLoaded)
+                    if (this.IsHandleCreated && !this.IsDisposed && isGameDataLoaded && !isUpdatingDisplay)
                     {
                         await UpdatePlayerDisplayAsync();
                     }
@@ -177,7 +181,6 @@ namespace WerewolfClient.Forms
                         if (IsHandleCreated) labelLoading.Text = "Đang đồng bộ trạng thái trò chơi...";
                         await LoadCurrentPhaseFromFirebase();
 
-                        // Chỉ ẩn panel loading nếu game CHƯA kết thúc và form còn tồn tại
                         if (!isGameReallyOver && IsHandleCreated && panelLoadingOverlay != null)
                         {
                             panelLoadingOverlay.Visible = false;
@@ -190,30 +193,30 @@ namespace WerewolfClient.Forms
                         {
                             labelLoading.Text = $"Lỗi tải dữ liệu: {ex.Message}";
                             MessageBox.Show($"Error loading game data: {ex.Message}", "Lỗi Tải Dữ Liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            if (panelLoadingOverlay != null) panelLoadingOverlay.Visible = false; // Vẫn ẩn nếu lỗi
+                            if (panelLoadingOverlay != null) panelLoadingOverlay.Visible = false;
                         }
                     }
                 }
-                else if (isGameDataLoaded)
+                else if (isGameDataLoaded && !isUpdatingDisplay)
                 {
+                    // Chỉ update khi thực sự cần thiết
                     await UpdatePlayerDisplayAsync();
-                    // Chỉ ẩn panel loading nếu game CHƯA kết thúc và form còn tồn tại
                     if (!isGameReallyOver && IsHandleCreated && panelLoadingOverlay != null)
                     {
                         panelLoadingOverlay.Visible = false;
                     }
                 }
+
                 else
                 {
                     if (IsHandleCreated)
                     {
                         labelLoading.Text = "Lỗi: Thông tin game/người dùng không hợp lệ.";
                         MessageBox.Show("Thông tin game hoặc người dùng không hợp lệ để tải dữ liệu.", "Lỗi Dữ Liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        if (panelLoadingOverlay != null) panelLoadingOverlay.Visible = false; // Vẫn ẩn nếu lỗi
+                        if (panelLoadingOverlay != null) panelLoadingOverlay.Visible = false;
                     }
                 }
 
-                // Hiển thị form với hiệu ứng fade in
                 if (IsHandleCreated)
                 {
                     this.Visible = true;
@@ -224,13 +227,15 @@ namespace WerewolfClient.Forms
                     }
                     this.Opacity = 1;
                 }
-                // BẮT ĐẦU POLLING PHASE SAU KHI FORM ĐÃ LOAD VÀ gameId ĐÃ ĐƯỢC SET
                 StartPhasePolling();
-                
-                // ***SỬA ĐỔI***: Setup listener cho game logs
-                SetupGameLogListener();
-                
-                // ***SỬA ĐỔI***: Load các game log cũ
+
+                SetupGameLogListener(); // Listener cho game logs chung
+                // ***THÊM VÀO***: Gọi phương thức thiết lập listener trạng thái người chơi
+                SetupPlayerStatusListener();
+
+                // Thiết lập timer kiểm tra trạng thái người chơi
+                SetupDeathCheckTimer();
+
                 await LoadExistingGameLogs();
             }
             catch (Exception ex)
@@ -239,7 +244,6 @@ namespace WerewolfClient.Forms
                 {
                     MessageBox.Show($"Lỗi khởi tạo form: {ex.Message}", "Lỗi Khởi Tạo", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
-                // Vẫn hiển thị form nếu có lỗi
                 this.Visible = true;
                 this.Opacity = 1;
             }
@@ -271,7 +275,6 @@ namespace WerewolfClient.Forms
         }
         private void InGameForm_Resize(object sender, EventArgs e)
         {
-            // Cập nhật vị trí của richTextBox2 và button Gửi khi resize
             richTextBox2.Location = new Point(10, panelLeft.Height - 60);
             button1.Location = new Point(panelLeft.Width - 80, panelLeft.Height - 60);
         }
@@ -420,7 +423,6 @@ namespace WerewolfClient.Forms
                     if (parts.Length >= 1 && (parts[0] == "PLAYER_LIST")) { } else return;
                 }
 
-
                 string command = parts[0];
                 switch (command)
                 {
@@ -435,7 +437,6 @@ namespace WerewolfClient.Forms
 
                             if (msgRoomId == this.chatRoomId)
                                 AddChatMessage(sender, msg);
-
                         }
                         break;
                     case "PLAYER_JOINED":
@@ -455,7 +456,6 @@ namespace WerewolfClient.Forms
                         }
                         break;
                     case "PLAYER_LIST":
-
                         break;
                 }
             }
@@ -520,10 +520,13 @@ namespace WerewolfClient.Forms
 
             if (this.IsDisposed || !this.IsHandleCreated || richTextBox1 == null || richTextBox1.IsDisposed) return;
 
-            // ***SỬA ĐỔI***: Chỉ lọc các log không cần thiết, giữ lại các log quan trọng
+            // ***ĐÃ LOẠI BỎ***: Logic kiểm tra cái chết dựa vào phân tích cú pháp tin nhắn đã được chuyển sang SetupPlayerStatusListener.
+            // Phương thức này giờ chỉ tập trung vào việc hiển thị log.
+
+            // Tiếp tục hiển thị log trong chat box
             List<string> phasesToIgnoreInChat = new List<string>
             {
-                "game_end" // Chỉ ẩn log kết thúc game
+                "game_end"
             };
 
             if (logEntry.Phase != null && phasesToIgnoreInChat.Contains(logEntry.Phase.ToLower()))
@@ -536,10 +539,9 @@ namespace WerewolfClient.Forms
             Font logFont = new Font(richTextBox1.Font, FontStyle.Italic);
             Color logColor = Color.LightSteelBlue;
 
-            // ***SỬA ĐỔI***: Thêm định dạng cho các loại log mới và đã có
-            if (logEntry.Phase == "player_death") // Log cho người chơi chết
+            if (logEntry.Phase == "player_death")
             {
-                logColor = Color.Tomato; // Màu đỏ
+                logColor = Color.Tomato;
                 logFont = new Font(richTextBox1.Font, FontStyle.Bold | FontStyle.Italic);
             }
             else if (logEntry.Phase == "night_summary" || logEntry.Phase == "day_vote_result")
@@ -568,12 +570,12 @@ namespace WerewolfClient.Forms
             {
                 logColor = Color.SkyBlue;
             }
-            else if (logEntry.Phase == "night_action_detail") // ***SỬA ĐỔI***: Thêm định dạng cho log hành động đêm
+            else if (logEntry.Phase == "night_action_detail")
             {
                 logColor = Color.LightCyan;
                 logFont = new Font(richTextBox1.Font, FontStyle.Italic);
             }
-            else if (logEntry.Phase == "day_vote") // ***SỬA ĐỔI***: Thêm định dạng cho log bỏ phiếu
+            else if (logEntry.Phase == "day_vote")
             {
                 logColor = Color.LightYellow;
                 logFont = new Font(richTextBox1.Font, FontStyle.Italic);
@@ -608,35 +610,95 @@ namespace WerewolfClient.Forms
 
         private async Task UpdatePlayerDisplayAsync()
         {
-            if (this.IsDisposed || !this.IsHandleCreated) return;
+            if (this.IsDisposed || !this.IsHandleCreated || isUpdatingDisplay) return;
 
-            if (tableLayoutPanel1.InvokeRequired)
-            {
-                await (Task)tableLayoutPanel1.Invoke(new Func<Task>(UpdatePlayerDisplayAsync));
-                return;
-            }
-
+            isUpdatingDisplay = true;
             try
             {
+                if (tableLayoutPanel1.InvokeRequired)
+                {
+                    await (Task)tableLayoutPanel1.Invoke(new Func<Task>(UpdatePlayerDisplayAsync));
+                    return;
+                }
+
+                // Kiểm tra gameId có hợp lệ không
+                if (string.IsNullOrEmpty(gameId))
+                {
+                    Console.WriteLine("DIAGNOSTIC: gameId is null or empty, skipping update");
+                    return;
+                }
+
+                // Kiểm tra xem có thực sự cần update không
+                List<Player> latestGamePlayers = new List<Player>();
+                try
+                {
+                    var firebase = new FirebaseHelper();
+                    latestGamePlayers = await firebase.GetPlayers(gameId);
+                    if (latestGamePlayers == null) latestGamePlayers = new List<Player>();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"DIAGNOSTIC: Error getting players from Firebase: {ex.Message}");
+                    latestGamePlayers = gamePlayers ?? new List<Player>(); // Sử dụng danh sách cũ nếu có lỗi
+                }
+
+                // So sánh với danh sách hiện tại để xem có thay đổi không
+                bool hasChanges = false;
+                if ((gamePlayers?.Count ?? 0) != latestGamePlayers.Count)
+                {
+                    hasChanges = true;
+                }
+                else
+                {
+                    for (int i = 0; i < (gamePlayers?.Count ?? 0) && i < latestGamePlayers.Count; i++)
+                    {
+                        if (gamePlayers[i]?.IsAlive != latestGamePlayers[i]?.IsAlive ||
+                            gamePlayers[i]?.Name != latestGamePlayers[i]?.Name)
+                        {
+                            hasChanges = true;
+                            break;
+                        }
+                    }
+                }
+
+                // Chỉ update nếu có thay đổi thực sự
+                if (!hasChanges)
+                {
+                    Console.WriteLine("DIAGNOSTIC: No changes detected, skipping update");
+                    return;
+                }
+                else
+                {
+                    Console.WriteLine("DIAGNOSTIC: Changes detected, updating display");
+                }
+
+                gamePlayers = latestGamePlayers;
+                
+                // Debug: In ra trạng thái của tất cả người chơi
+                Console.WriteLine($"DIAGNOSTIC: Current players status:");
+                foreach (var player in gamePlayers)
+                {
+                    Console.WriteLine($"  - {player?.Name}: IsAlive = {player?.IsAlive}");
+                }
+
                 tableLayoutPanel1.SuspendLayout();
                 if (string.IsNullOrEmpty(currentUserRole) && !string.IsNullOrEmpty(currentUserId) && !string.IsNullOrEmpty(gameId))
                 {
-                    if (panelLoadingOverlay.Visible && !isGameReallyOver && IsHandleCreated) labelLoading.Text = "Đang tải lại vai trò...";
+                    if (panelLoadingOverlay != null && panelLoadingOverlay.Visible && !isGameReallyOver && IsHandleCreated) 
+                    {
+                        if (labelLoading != null) labelLoading.Text = "Đang tải lại vai trò...";
+                    }
                     await LoadCurrentUserRole();
                 }
-
-                var firebase = new FirebaseHelper();
-                List<Player> latestGamePlayers = await firebase.GetPlayers(gameId);
-                if (latestGamePlayers == null) latestGamePlayers = new List<Player>();
-
-                gamePlayers = latestGamePlayers;
 
 
                 tableLayoutPanel1.Controls.Clear();
                 int playerDisplayIndex = 0;
-                var orderedPlayers = gamePlayers.OrderBy(p => p.Name == CurrentUserName ? 0 : 1)
+                var orderedPlayers = (gamePlayers ?? new List<Player>()).OrderBy(p => p.Name == CurrentUserName ? 0 : 1)
                                                .ThenBy(p => p.Name)
                                                .ToList();
+
+
 
                 for (int row = 0; row < tableLayoutPanel1.RowCount; row++)
                 {
@@ -650,7 +712,7 @@ namespace WerewolfClient.Forms
                         }
 
                         Player currentPlayerDoc = orderedPlayers[playerDisplayIndex];
-                        string playerName = currentPlayerDoc.Name;
+                        string playerName = currentPlayerDoc?.Name ?? "Unknown Player";
 
                         Panel p = new Panel { Dock = DockStyle.Fill, Margin = new Padding(3), BorderStyle = BorderStyle.FixedSingle };
                         p.Name = $"playerPanel_{playerName.Replace(" ", "_")}";
@@ -663,9 +725,11 @@ namespace WerewolfClient.Forms
                         Label nameLabel = new Label { Text = playerName, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
                         PictureBox pictureBox = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Dock = DockStyle.Fill, Margin = new Padding(5) };
 
-                        if (!currentPlayerDoc.IsAlive)
+                        if (currentPlayerDoc == null || !currentPlayerDoc.IsAlive)
                         {
-                            pictureBox.Image = roleIcons.ContainsKey("dead") ? roleIcons["dead"] : Properties.Resources.UserIcon;
+                            // Hiển thị DeadIcon cho tất cả người chơi đã chết
+                            Console.WriteLine($"DIAGNOSTIC: Setting DeadIcon for player {playerName}, IsAlive: {currentPlayerDoc?.IsAlive}");
+                            pictureBox.Image = Properties.Resources.DeadIcon;
                             nameLabel.ForeColor = Color.DarkGray;
                             p.BackColor = Color.FromArgb(150, 50, 50, 50);
                         }
@@ -676,6 +740,7 @@ namespace WerewolfClient.Forms
 
                             nameLabel.ForeColor = (playerName == CurrentUserName) ? Color.Gold : Color.WhiteSmoke;
 
+                            // Chỉ hiển thị icon vai trò cho người chơi hiện tại khi họ còn sống
                             if (playerName == CurrentUserName && !string.IsNullOrEmpty(currentUserRole) && roleIcons.ContainsKey(currentUserRole))
                             {
                                 pictureBox.Image = roleIcons[currentUserRole];
@@ -709,6 +774,7 @@ namespace WerewolfClient.Forms
             }
             finally
             {
+                isUpdatingDisplay = false;
                 if (IsHandleCreated && tableLayoutPanel1 != null)
                 {
                     tableLayoutPanel1.ResumeLayout(true);
@@ -727,14 +793,112 @@ namespace WerewolfClient.Forms
             Console.WriteLine($"DIAGNOSTIC InGameForm: SetFirebaseInfo called. UserID: {userId}, GameID: {gameIdParam}, IsHost: {isHostParam}, RoomID: {roomIdParam}");
             if (!isServerConnected)
             {
-                ConnectToServer();  // sẽ tự gửi JOIN_ROOM nếu chatRoomId và userName đã có
+                ConnectToServer();
+            }
+            // ***QUAN TRỌNG***: Gọi phương thức thiết lập listener trạng thái người chơi
+            SetupPlayerStatusListener();
+            // ***THÊM VÀO***: Đặt lại cờ hasDisplayedDeathMessage khi thiết lập thông tin game mới
+            hasDisplayedDeathMessage = false;
+        }
+
+        // ***THÊM/KIỂM TRA***: Phương thức thiết lập listener trạng thái người chơi
+        private void SetupPlayerStatusListener()
+        {
+            // Đảm bảo không tạo nhiều listener trùng lặp
+            if (firebasePlayersListener != null)
+            {
+                firebasePlayersListener.Dispose();
+                firebasePlayersListener = null;
             }
 
+            // Đảm bảo gameId và currentUserId đã được thiết lập trước khi lắng nghe
+            if (string.IsNullOrEmpty(gameId) || string.IsNullOrEmpty(currentUserId))
+            {
+                Console.WriteLine("DIAGNOSTIC InGameForm: gameId or currentUserId is null or empty. Cannot set up player status listener.");
+                return;
+            }
+
+            try
+            {
+                var firebase = new FirebaseClient(
+                    "https://werewolf-d83dd-default-rtdb.asia-southeast1.firebasedatabase.app/",
+                    new FirebaseOptions { AuthTokenAsyncFactory = () => Task.FromResult(CurrentUserManager.CurrentUser?.IdToken) });
+
+                // Lắng nghe sự thay đổi của tất cả người chơi
+                firebasePlayersListener = firebase
+                    .Child("games")
+                    .Child(gameId)
+                    .Child("players")
+                    .AsObservable<Player>()
+                    .Subscribe(playerEvent =>
+                    {
+                        // Chỉ xử lý nếu có đối tượng và đó là người chơi hiện tại
+                        if (playerEvent.Object != null && playerEvent.Key == currentUserId)
+                        {
+                            Player updatedPlayer = playerEvent.Object;
+                            Console.WriteLine($"DIAGNOSTIC InGameForm: Current user's player object updated. IsAlive: {updatedPlayer.IsAlive}, HasDisplayedDeathMessage: {hasDisplayedDeathMessage}");
+
+                            // Hiển thị thông báo khi người chơi chết, chưa hiển thị thông báo và game chưa kết thúc
+                            if (!updatedPlayer.IsAlive && !hasDisplayedDeathMessage && !isGameReallyOver)
+                            {
+                                hasDisplayedDeathMessage = true; // Đặt cờ để không hiển thị lại
+                                uiContext.Post(_ =>
+                                {
+                                    if (IsHandleCreated && !IsDisposed)
+                                    {
+                                        MessageBox.Show("Bạn đã chết.", "Thông Báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                                        // Gọi phương thức để vô hiệu hóa các điều khiển UI cho người chơi đã chết
+                                        DisablePlayerControls();
+                                    }
+                                }, null);
+                            }
+                        }
+
+                        // Logic debounce để cập nhật giao diện người chơi chung
+                        if (_updatePlayersDisplayDebounceTimer != null && !isUpdatingDisplay)
+                        {
+                            _updatePlayersDisplayDebounceTimer.Stop(); // Reset timer on each player change
+                            _updatePlayersDisplayDebounceTimer.Start();
+                        }
+
+                        // Force update ngay lập tức nếu có thay đổi trạng thái sống/chết
+                        if (playerEvent.Object != null && playerEvent.Object.IsAlive != gamePlayers.FirstOrDefault(p => p.Id == playerEvent.Key)?.IsAlive)
+                        {
+                            Console.WriteLine($"DIAGNOSTIC: Player {playerEvent.Object.Name} status changed, forcing immediate update");
+                            uiContext.Post(async _ =>
+                            {
+                                if (IsHandleCreated && !IsDisposed && !isUpdatingDisplay)
+                                {
+                                    await UpdatePlayerDisplayAsync();
+                                }
+                            }, null);
+                        }
+                    }, error =>
+                    {
+                        Console.WriteLine($"Error in player status listener: {error.Message}");
+                        if (IsHandleCreated)
+                        {
+                            uiContext.Post(_ => MessageBox.Show($"Lỗi lắng nghe trạng thái người chơi: {error.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error), null);
+                        }
+                    });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error setting up player status listener: {ex.Message}");
+            }
         }
+
 
         private async Task LoadCurrentUserRole()
         {
             if (string.IsNullOrEmpty(currentUserId) || string.IsNullOrEmpty(currentGameId)) return;
+            
+            // Cache để tránh load lại nếu đã có
+            if (!string.IsNullOrEmpty(currentUserRole) && !string.IsNullOrEmpty(CurrentUserName))
+            {
+                return;
+            }
+            
             try
             {
                 var firebase = new FirebaseClient(
@@ -802,16 +966,19 @@ namespace WerewolfClient.Forms
             if (phasePollingTimer == null)
             {
                 phasePollingTimer = new System.Windows.Forms.Timer();
-                phasePollingTimer.Interval = 2000; // 2 seconds
+                phasePollingTimer.Interval = 3000; // Tăng lên 3 giây
                 phasePollingTimer.Tick += async (s, e) =>
                 {
-                    var fbHelper = new FirebaseHelper();
-                    var game = await fbHelper.GetGame(gameId);
-                    if (game != null && (game.CurrentPhase != lastKnownPhase || game.PhaseStartTime != lastKnownPhaseStartTime))
+                    if (!isUpdatingDisplay) // Chỉ poll khi không đang update
                     {
-                        lastKnownPhase = game.CurrentPhase;
-                        lastKnownPhaseStartTime = game.PhaseStartTime;
-                        await UpdatePhaseAndTimerFromFirebase(game.CurrentPhase, game.PhaseStartTime);
+                        var fbHelper = new FirebaseHelper();
+                        var game = await fbHelper.GetGame(gameId);
+                        if (game != null && (game.CurrentPhase != lastKnownPhase || game.PhaseStartTime != lastKnownPhaseStartTime))
+                        {
+                            lastKnownPhase = game.CurrentPhase;
+                            lastKnownPhaseStartTime = game.PhaseStartTime;
+                            await UpdatePhaseAndTimerFromFirebase(game.CurrentPhase, game.PhaseStartTime);
+                        }
                     }
                 };
             }
@@ -831,7 +998,6 @@ namespace WerewolfClient.Forms
 
             if (currentGameData != null)
             {
-                // Debug: Check for both PhaseStartTime and phaseStartTime
                 var type = currentGameData.GetType();
                 var propLower = type.GetProperty("phaseStartTime");
                 var propUpper = type.GetProperty("PhaseStartTime");
@@ -857,10 +1023,8 @@ namespace WerewolfClient.Forms
                 this.currentDay = currentGameData.RoundNumber > 0 ? currentGameData.RoundNumber : 1;
             }
 
-            // Reset the processing flag when phase changes
             isProcessingTimerExpiration = false;
 
-            // Kiểm tra trạng thái kết thúc game
             if (currentGameData != null &&
                 (currentGameData.Status == "villagers_win" || currentGameData.Status == "werewolves_win" || currentGameData.Status == "ended"))
             {
@@ -897,7 +1061,6 @@ namespace WerewolfClient.Forms
                 return;
             }
 
-            // Xử lý phase mới
             GamePhaseClient oldPhaseClient = currentPhaseClient;
             GamePhaseClient newPhaseClientOnClient = GamePhaseClient.Unknown;
             string newPhaseDisplayName = "Không xác định";
@@ -936,7 +1099,6 @@ namespace WerewolfClient.Forms
                 }
             }
 
-            // Luôn chỉ dùng PhaseStartTime (chữ hoa đầu)
             string phaseStartTimeStr = currentGameData.PhaseStartTime;
             if (!string.IsNullOrEmpty(phaseStartTimeStr))
             {
@@ -961,7 +1123,6 @@ namespace WerewolfClient.Forms
                 });
             }
 
-            // Khởi động lại timer
             if (phaseTimerUi == null)
             {
                 phaseTimerUi = new System.Windows.Forms.Timer { Interval = 1000 };
@@ -970,18 +1131,14 @@ namespace WerewolfClient.Forms
 
             if (!isGameReallyOver)
             {
-                // Stop the timer first
                 phaseTimerUi.Stop();
 
-                // Reset timer state
                 isProcessingTimerExpiration = false;
 
-                // Update the timer display immediately
                 TimeSpan elapsed = DateTime.UtcNow - phaseStartTimeUtc;
                 int timeLeft = Math.Max(0, phaseDurationSeconds - (int)elapsed.TotalSeconds);
                 UpdateTimerLabelUi(timeLeft);
 
-                // Only start the timer if there's time left
                 if (timeLeft > 0)
                 {
                     phaseTimerUi.Start();
@@ -1006,10 +1163,8 @@ namespace WerewolfClient.Forms
 
             if (timeLeft <= 0)
             {
-                // Stop the timer first to prevent multiple triggers
                 phaseTimerUi.Stop();
 
-                // Only process timer expiration if we haven't already started processing
                 if (!isProcessingTimerExpiration)
                 {
                     isProcessingTimerExpiration = true;
@@ -1183,10 +1338,10 @@ namespace WerewolfClient.Forms
                 actionButton.Location = new Point(buttonX, buttonY);
                 actionButton.Visible = true; actionButton.BringToFront();
                 currentActionTargetPlayerName = targetPlayer.Name; currentActionButtonText = newButtonText;
-                if (actionButton.IsHandleCreated) actionButton.Click -= CurrentActionButton_Click; // Gỡ bỏ handler cũ trước khi thêm mới
+                if (actionButton.IsHandleCreated) actionButton.Click -= CurrentActionButton_Click;
                 if (actionButton.IsHandleCreated) actionButton.Click += new System.EventHandler(this.CurrentActionButton_Click);
             }
-            else { if (actionButton.IsHandleCreated) actionButton.Visible = false; if (actionButton.IsHandleCreated) actionButton.Click -= CurrentActionButton_Click; }
+            else { if (actionButton.IsHandleCreated) actionButton.Visible = false; if (actionButton.IsHandleCreated) actionButton.Click -= CurrentActionButton_Click; selectedPlayerPanel = null; }
         }
 
         private async void CurrentActionButton_Click(object sender, EventArgs e)
@@ -1302,7 +1457,6 @@ namespace WerewolfClient.Forms
                     return;
                 }
 
-                // Only call NextPhase, do not update PhaseStartTime manually
                 string gameEndStatus = await firebaseHelper.NextPhase(gameId, currentPhaseStrFromFirebase);
 
                 if (IsHandleCreated && panelLoadingOverlay != null && !isGameReallyOver)
@@ -1368,7 +1522,6 @@ namespace WerewolfClient.Forms
                         SendMessage($"QUIT_ROOM:{chatRoomId}:{CurrentUserName}");
                     }
 
-                    // Dọn dẹp listeners và timers
                     if (firebasePhaseListener != null) { firebasePhaseListener.Dispose(); firebasePhaseListener = null; }
                     if (firebaseGameStatusListener != null) { firebaseGameStatusListener.Dispose(); firebaseGameStatusListener = null; }
                     if (firebasePlayersListener != null) { firebasePlayersListener.Dispose(); firebasePlayersListener = null; }
@@ -1376,6 +1529,10 @@ namespace WerewolfClient.Forms
 
                     if (phaseTimerUi != null) { phaseTimerUi.Stop(); phaseTimerUi.Dispose(); phaseTimerUi = null; }
                     if (_updatePlayersDisplayDebounceTimer != null) { _updatePlayersDisplayDebounceTimer.Stop(); _updatePlayersDisplayDebounceTimer.Dispose(); _updatePlayersDisplayDebounceTimer = null; }
+                    if (deathCheckTimer != null) { deathCheckTimer.Stop(); deathCheckTimer.Dispose(); deathCheckTimer = null; }
+
+                    // ***QUAN TRỌNG***: Đặt lại cờ khi thoát hoặc game mới
+                    hasDisplayedDeathMessage = false;
 
                     if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
                     {
@@ -1399,10 +1556,8 @@ namespace WerewolfClient.Forms
 
         private async void InGameForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            // Ngăn form đóng ngay để xử lý bất đồng bộ, logic này từ file gốc của bạn
             e.Cancel = true;
 
-            // Hủy các listeners (có thể đã được hủy trong BtnQuit_Click nhưng đảm bảo ở đây)
             firebasePhaseListener?.Dispose(); firebasePhaseListener = null;
             firebaseGameStatusListener?.Dispose(); firebaseGameStatusListener = null;
             firebasePlayersListener?.Dispose(); firebasePlayersListener = null;
@@ -1410,14 +1565,15 @@ namespace WerewolfClient.Forms
 
             phaseTimerUi?.Stop(); phaseTimerUi?.Dispose(); phaseTimerUi = null;
             _updatePlayersDisplayDebounceTimer?.Stop(); _updatePlayersDisplayDebounceTimer?.Dispose(); _updatePlayersDisplayDebounceTimer = null;
+            deathCheckTimer?.Stop(); deathCheckTimer?.Dispose(); deathCheckTimer = null;
 
-            // Hủy CancellationTokenSource cho luồng nhận TCP
+            // ***QUAN TRỌNG***: Đặt lại cờ khi form đóng
+            hasDisplayedDeathMessage = false;
+
             if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
             {
                 _cancellationTokenSource.Cancel();
             }
-
-            // Chờ luồng nhận TCP kết thúc (với timeout ngắn)
             if (_receivingTask != null && !_receivingTask.IsCompleted)
             {
                 try
@@ -1429,8 +1585,6 @@ namespace WerewolfClient.Forms
             }
             _cancellationTokenSource?.Dispose(); _cancellationTokenSource = null;
 
-
-            // Đóng kết nối TCP
             if (networkStream != null)
             {
                 try { networkStream.Close(); networkStream.Dispose(); } catch { /* Ignore */ }
@@ -1493,10 +1647,8 @@ namespace WerewolfClient.Forms
             Console.WriteLine($"DIAGNOSTIC InGameForm: Showing end game form with result: {resultText}");
             if (this.IsDisposed || !this.IsHandleCreated) return;
 
-            // Ẩn form hiện tại trước
             this.Hide();
 
-            // Tạo và hiển thị form mới trong một luồng riêng
             this.BeginInvoke((MethodInvoker)delegate
             {
                 try
@@ -1511,7 +1663,6 @@ namespace WerewolfClient.Forms
                 {
                     Console.WriteLine($"DIAGNOSTIC InGameForm: Error showing end game form: {ex.Message}");
                     MessageBox.Show($"Lỗi khi hiển thị màn hình kết thúc: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    // Nếu có lỗi, hiển thị lại form hiện tại
                     this.Show();
                 }
             });
@@ -1519,7 +1670,6 @@ namespace WerewolfClient.Forms
 
         public void CleanupNetworkResources()
         {
-            // Hủy các listeners và timer
             firebasePhaseListener?.Dispose(); firebasePhaseListener = null;
             firebaseGameStatusListener?.Dispose(); firebaseGameStatusListener = null;
             firebasePlayersListener?.Dispose(); firebasePlayersListener = null;
@@ -1527,20 +1677,21 @@ namespace WerewolfClient.Forms
 
             phaseTimerUi?.Stop(); phaseTimerUi?.Dispose(); phaseTimerUi = null;
             _updatePlayersDisplayDebounceTimer?.Stop(); _updatePlayersDisplayDebounceTimer?.Dispose(); _updatePlayersDisplayDebounceTimer = null;
+            deathCheckTimer?.Stop(); deathCheckTimer?.Dispose(); deathCheckTimer = null;
 
-            // Hủy CancellationTokenSource cho luồng nhận TCP
+            // ***QUAN TRỌNG***: Đặt lại cờ khi dọn dẹp tài nguyên
+            hasDisplayedDeathMessage = false;
+
             if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
             {
                 _cancellationTokenSource.Cancel();
             }
-            // Chờ luồng nhận TCP kết thúc (timeout lâu hơn)
             if (_receivingTask != null && !_receivingTask.IsCompleted)
             {
                 try { _receivingTask.Wait(1000); } catch { }
             }
             _cancellationTokenSource?.Dispose(); _cancellationTokenSource = null;
 
-            // Đóng kết nối TCP
             if (networkStream != null)
             {
                 try { networkStream.Close(); networkStream.Dispose(); } catch { }
@@ -1554,7 +1705,6 @@ namespace WerewolfClient.Forms
             isServerConnected = false;
         }
 
-        // ***SỬA ĐỔI***: Thêm method để setup listener cho game logs
         private void SetupGameLogListener()
         {
             if (firebaseGameLogListener != null)
@@ -1579,7 +1729,6 @@ namespace WerewolfClient.Forms
                     {
                         if (gameLogEvent.Object != null && !this.IsDisposed && this.IsHandleCreated)
                         {
-                            // Hiển thị log trong chat
                             DisplayGameLog(gameLogEvent.Object);
                         }
                     });
@@ -1590,7 +1739,6 @@ namespace WerewolfClient.Forms
             }
         }
 
-        // ***SỬA ĐỔI***: Thêm method để load các game log cũ
         private async Task LoadExistingGameLogs()
         {
             if (string.IsNullOrEmpty(gameId)) return;
@@ -1620,6 +1768,70 @@ namespace WerewolfClient.Forms
             {
                 Console.WriteLine($"Error loading existing game logs: {ex.Message}");
             }
+        }
+
+        // ***THÊM VÀO***: Phương thức vô hiệu hóa các điều khiển
+        private void DisablePlayerControls()
+        {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(DisablePlayerControls));
+                return;
+            }
+
+            // Vô hiệu hóa ô nhập chat và nút Gửi
+            if (richTextBox2 != null) richTextBox2.Enabled = false;
+            if (button1 != null) button1.Enabled = false;
+
+            // Ẩn hoặc vô hiệu hóa actionButton
+            if (actionButton != null) actionButton.Visible = false;
+
+            // Thay đổi giao diện richTextBox2 để báo hiệu không thể chat
+            if (richTextBox2 != null)
+            {
+                richTextBox2.BackColor = System.Drawing.Color.DarkGray;
+                richTextBox2.Text = "Bạn đã chết. Chỉ có thể xem chat.";
+                richTextBox2.ForeColor = System.Drawing.Color.LightGray;
+            }
+
+            // Tùy chọn: Vô hiệu hóa các panel người chơi để không thể click chọn
+            // Điều này có thể cần logic phức tạp hơn nếu bạn muốn người chết vẫn xem được thông tin chi tiết
+            // tableLayoutPanel1.Enabled = false;
+            // Hoặc bạn có thể thêm một lớp phủ mờ lên các phần tương tác
+        }
+
+        private void SetupDeathCheckTimer()
+        {
+            if (deathCheckTimer == null)
+            {
+                deathCheckTimer = new System.Windows.Forms.Timer();
+                deathCheckTimer.Interval = 3000; // Giảm xuống 3 giây để phát hiện chết nhanh hơn
+                deathCheckTimer.Tick += async (s, e) =>
+                {
+                    if (IsHandleCreated && !IsDisposed && !isGameReallyOver && !isUpdatingDisplay)
+                    {
+                        try
+                        {
+                            var firebase = new FirebaseHelper();
+                            var currentPlayers = await firebase.GetPlayers(gameId);
+                            if (currentPlayers != null)
+                            {
+                                bool hasDeadPlayers = currentPlayers.Any(p => !p.IsAlive);
+                                if (hasDeadPlayers)
+                                {
+                                    Console.WriteLine("DIAGNOSTIC: DeathCheckTimer detected dead players, forcing update");
+                                    await UpdatePlayerDisplayAsync();
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"DIAGNOSTIC: Error in death check timer: {ex.Message}");
+                        }
+                    }
+                };
+            }
+            deathCheckTimer.Start();
         }
     }
 }
