@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Linq; // Added for .Any()
 
 namespace WerewolfServer
 {
@@ -127,6 +128,11 @@ namespace WerewolfServer
                             string joinName = parts[2];
                             if (_rooms.ContainsKey(roomId))
                             {
+                                if (_rooms[roomId].Players.Any(p => p.Name == joinName))
+                                {
+                                    // Nếu user đã có trong phòng, không add lại
+                                    return;
+                                }
                                 player = new Player(client, joinName);
                                 byte[] joinSuccess = Encoding.UTF8.GetBytes("JOIN_SUCCESS\n");
                                 client.GetStream().Write(joinSuccess, 0, joinSuccess.Length);
@@ -195,6 +201,8 @@ namespace WerewolfServer
 
             public void AddPlayer(Player player)
             {
+                if (Players.Any(p => p.Name == player.Name))
+                    return;
                 player.CurrentRoom = this;
                 Players.Add(player);
                 Broadcast($"PLAYER_JOINED:{player.Name}", "");
@@ -209,10 +217,6 @@ namespace WerewolfServer
                     Players.Remove(player);
                     Broadcast($"PLAYER_LEFT:{playerName}", "");
                     Broadcast($"PLAYER_LIST:{string.Join(",", GetPlayerNames())}", "");
-                }
-                if (Players.Count == 0)
-                {
-                    GameServer.RemoveRoom(Id);
                 }
             }
 

@@ -114,7 +114,15 @@ namespace WerewolfClient.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Lỗi khi tạo phòng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                string exMsg = ex.Message.ToLower();
+                if (exMsg.Contains("wsacancelblockingcall") || exMsg.Contains("a blocking operation was interrupted") || exMsg.Contains("unable to read data from the transport connection"))
+                {
+                    Console.WriteLine($"[INFO] Socket closed or interrupted during form switch: {ex.Message}");
+                }
+                else
+                {
+                    MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -204,7 +212,15 @@ namespace WerewolfClient.Forms
                                 }
                                 catch (Exception ex)
                                 {
-                                    MessageBox.Show($"Lỗi khi tham gia phòng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    string exMsg = ex.Message.ToLower();
+                                    if (exMsg.Contains("wsacancelblockingcall") || exMsg.Contains("a blocking operation was interrupted") || exMsg.Contains("unable to read data from the transport connection"))
+                                    {
+                                        Console.WriteLine($"[INFO] Socket closed or interrupted during form switch: {ex.Message}");
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show($"Lỗi khi tham gia phòng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                    }
                                     client.Close();
                                 }
                             }
@@ -216,7 +232,15 @@ namespace WerewolfClient.Forms
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show($"Không thể vào phòng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            string exMsg = ex.Message.ToLower();
+                            if (exMsg.Contains("wsacancelblockingcall") || exMsg.Contains("a blocking operation was interrupted") || exMsg.Contains("unable to read data from the transport connection"))
+                            {
+                                Console.WriteLine($"[INFO] Socket closed or interrupted during form switch: {ex.Message}");
+                            }
+                            else
+                            {
+                                MessageBox.Show($"Không thể vào phòng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            }
                         }
                     }
                 }
