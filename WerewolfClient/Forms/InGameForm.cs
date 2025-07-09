@@ -665,11 +665,14 @@ namespace WerewolfClient.Forms
 
         private async Task UpdatePlayerDisplayAsync()
         {
+            // Các kiểm tra ban đầu để thoát sớm nếu không thể cập nhật
             if (this.IsDisposed || !this.IsHandleCreated || isUpdatingDisplay) return;
 
-            isUpdatingDisplay = true;
+            isUpdatingDisplay = true; // Đặt cờ để ngăn các cập nhật chồng chéo
+
             try
             {
+                // Xử lý InvokeRequired để đảm bảo chạy trên luồng UI chính
                 if (tableLayoutPanel1.InvokeRequired)
                 {
                     await (Task)tableLayoutPanel1.Invoke(new Func<Task>(UpdatePlayerDisplayAsync));
@@ -683,7 +686,7 @@ namespace WerewolfClient.Forms
                     return;
                 }
 
-                // Kiểm tra xem có thực sự cần update không
+                // Lấy danh sách người chơi mới nhất từ Firebase
                 List<Player> latestGamePlayers = new List<Player>();
                 try
                 {
@@ -720,7 +723,7 @@ namespace WerewolfClient.Forms
                 if (!hasChanges)
                 {
                     Console.WriteLine("DIAGNOSTIC: No changes detected, skipping update");
-                    return;
+                    return; // Thoát nếu không có thay đổi. Lớp phủ không cần hiển thị.
                 }
                 else
                 {
@@ -728,7 +731,7 @@ namespace WerewolfClient.Forms
                 }
 
                 gamePlayers = latestGamePlayers;
-                
+
                 // Debug: In ra trạng thái của tất cả người chơi
                 Console.WriteLine($"DIAGNOSTIC: Current players status:");
                 foreach (var player in gamePlayers)
@@ -736,31 +739,48 @@ namespace WerewolfClient.Forms
                     Console.WriteLine($"  - {player?.Name}: IsAlive = {player?.IsAlive}");
                 }
 
-                tableLayoutPanel1.SuspendLayout();
+                // --- BỔ SUNG: HIỂN THỊ panelLoadingOverlay VÀ CẬP NHẬT TEXT CHO QUÁ TRÌNH CẬP NHẬT UI ---
+                // Điều này đảm bảo lớp phủ sẽ xuất hiện khi có thay đổi và trước khi các thao tác UI phức tạp bắt đầu.
+                if (panelLoadingOverlay != null)
+                {
+                    panelLoadingOverlay.Dock = DockStyle.Fill; // Đảm bảo lớp phủ che toàn bộ Form
+                    panelLoadingOverlay.BringToFront(); // Đảm bảo nó nằm trên tất cả các control khác
+                    panelLoadingOverlay.Visible = true; // Hiển thị lớp phủ
+                    if (labelLoading != null)
+                    {
+                        labelLoading.Text = "Đang cập nhật danh sách người chơi..."; // Thông báo chung cho quá trình này
+                    }
+                }
+
+                tableLayoutPanel1.SuspendLayout(); // Tạm dừng bố cục để tối ưu hiệu suất
+
+                // Logic tải vai trò người chơi hiện tại (nếu cần)
+                // Đoạn này có thể cập nhật labelLoading.Text với thông báo cụ thể hơn, ghi đè thông báo chung.
                 if (string.IsNullOrEmpty(currentUserRole) && !string.IsNullOrEmpty(currentUserId) && !string.IsNullOrEmpty(gameId))
                 {
-                    if (panelLoadingOverlay != null && panelLoadingOverlay.Visible && !isGameReallyOver && IsHandleCreated) 
+                    if (panelLoadingOverlay != null && panelLoadingOverlay.Visible && labelLoading != null && !isGameReallyOver && IsHandleCreated)
                     {
-                        if (labelLoading != null) labelLoading.Text = "Đang tải lại vai trò...";
+                        labelLoading.Text = "Đang tải lại vai trò..."; // Thông báo cụ thể hơn khi tải vai trò
                     }
                     await LoadCurrentUserRole();
                 }
 
-
+                // Xóa tất cả các điều khiển cũ khỏi TableLayoutPanel
                 tableLayoutPanel1.Controls.Clear();
                 int playerDisplayIndex = 0;
+                // Sắp xếp người chơi (người chơi hiện tại lên đầu)
                 var orderedPlayers = (gamePlayers ?? new List<Player>()).OrderBy(p => p.Name == CurrentUserName ? 0 : 1)
-                                               .ThenBy(p => p.Name)
-                                               .ToList();
+                                                                         .ThenBy(p => p.Name)
+                                                                         .ToList();
 
-
-
+                // Vòng lặp tạo và thêm các Panel người chơi vào TableLayoutPanel
                 for (int row = 0; row < tableLayoutPanel1.RowCount; row++)
                 {
                     for (int col = 0; col < tableLayoutPanel1.ColumnCount; col++)
                     {
                         if (playerDisplayIndex >= orderedPlayers.Count)
                         {
+                            // Thêm Panel trống nếu hết người chơi để hiển thị
                             Panel emptyP = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(20, 0, 0, 0), Margin = new Padding(2), BorderStyle = BorderStyle.None };
                             tableLayoutPanel1.Controls.Add(emptyP, col, row);
                             continue;
@@ -769,33 +789,35 @@ namespace WerewolfClient.Forms
                         Player currentPlayerDoc = orderedPlayers[playerDisplayIndex];
                         string playerName = currentPlayerDoc?.Name ?? "Unknown Player";
 
+                        // Tạo Panel chính cho người chơi
                         Panel p = new Panel { Dock = DockStyle.Fill, Margin = new Padding(3), BorderStyle = BorderStyle.FixedSingle };
                         p.Name = $"playerPanel_{playerName.Replace(" ", "_")}";
 
+                        // Tạo TableLayoutPanel con để sắp xếp tên và ảnh
                         TableLayoutPanel innerTLP = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 2, ColumnCount = 1 };
-                        innerTLP.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
-                        innerTLP.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+                        innerTLP.RowStyles.Add(new RowStyle(SizeType.Absolute, 30)); // Hàng cho tên
+                        innerTLP.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // Hàng cho ảnh
                         p.Controls.Add(innerTLP);
 
                         Label nameLabel = new Label { Text = playerName, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
                         PictureBox pictureBox = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Dock = DockStyle.Fill, Margin = new Padding(5) };
 
+                        // Logic hiển thị dựa trên trạng thái sống/chết và vai trò
                         if (currentPlayerDoc == null || !currentPlayerDoc.IsAlive)
                         {
-                            // Hiển thị DeadIcon cho tất cả người chơi đã chết
                             Console.WriteLine($"DIAGNOSTIC: Setting DeadIcon for player {playerName}, IsAlive: {currentPlayerDoc?.IsAlive}");
                             pictureBox.Image = Properties.Resources.DeadIcon;
                             nameLabel.ForeColor = Color.DarkGray;
-                            p.BackColor = Color.FromArgb(150, 50, 50, 50);
+                            p.BackColor = Color.FromArgb(150, 50, 50, 50); // Màu nền tối cho người chết
                         }
                         else
                         {
-                            p.BackColor = Color.FromArgb(150, 30, 30, 30);
-                            if (playerName == CurrentUserName) p.BackColor = Color.FromArgb(150, 0, 50, 50);
+                            p.BackColor = Color.FromArgb(150, 30, 30, 30); // Màu nền mặc định cho người sống
+                            if (playerName == CurrentUserName) p.BackColor = Color.FromArgb(150, 0, 50, 50); // Highlight người chơi hiện tại
 
                             nameLabel.ForeColor = (playerName == CurrentUserName) ? Color.Gold : Color.WhiteSmoke;
 
-                            // Chỉ hiển thị icon vai trò cho người chơi hiện tại khi họ còn sống
+                            // Hiển thị icon vai trò cho người chơi hiện tại khi còn sống, hoặc UserIcon mặc định
                             if (playerName == CurrentUserName && !string.IsNullOrEmpty(currentUserRole) && roleIcons.ContainsKey(currentUserRole))
                             {
                                 pictureBox.Image = roleIcons[currentUserRole];
@@ -806,14 +828,17 @@ namespace WerewolfClient.Forms
                             }
                         }
 
+                        // Gán các sự kiện click cho Panel và các control con
                         var panelClickHandler = new System.EventHandler((s, eArgs) => OnPlayerPanelClick(currentPlayerDoc, p));
                         p.Click += panelClickHandler;
                         nameLabel.Click += panelClickHandler;
                         pictureBox.Click += panelClickHandler;
                         innerTLP.Click += panelClickHandler;
 
+                        // Thêm tên và ảnh vào TableLayoutPanel con
                         innerTLP.Controls.Add(nameLabel, 0, 0);
                         innerTLP.Controls.Add(pictureBox, 0, 1);
+                        // Thêm Panel người chơi vào TableLayoutPanel chính
                         tableLayoutPanel1.Controls.Add(p, col, row);
                         playerDisplayIndex++;
                     }
@@ -829,10 +854,16 @@ namespace WerewolfClient.Forms
             }
             finally
             {
-                isUpdatingDisplay = false;
+                isUpdatingDisplay = false; // Đặt lại cờ
                 if (IsHandleCreated && tableLayoutPanel1 != null)
                 {
-                    tableLayoutPanel1.ResumeLayout(true);
+                    tableLayoutPanel1.ResumeLayout(true); // Tiếp tục bố cục lại UI
+                }
+                // --- ĐẢM BẢO panelLoadingOverlay LUÔN ĐƯỢC ẨN KHI HÀM KẾT THÚC ---
+                // Điều này rất quan trọng để lớp phủ không bị kẹt ở trạng thái hiển thị
+                if (panelLoadingOverlay != null)
+                {
+                    panelLoadingOverlay.Visible = false;
                 }
             }
         }
