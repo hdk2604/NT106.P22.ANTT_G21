@@ -886,4 +886,37 @@ public class FirebaseHelper
             await AddGameLog(gameId, $"Lỗi kiểm tra kết thúc game: {ex.Message}", "SystemError");
         }
     }
+
+    public async Task ResetGameState(string gameId)
+    {
+        await firebase.Child("games").Child(gameId).Child("CurrentPhase").PutAsync("\"night\"");
+        await firebase.Child("games").Child(gameId).Child("RoundNumber").PutAsync(1);
+        await firebase.Child("games").Child(gameId).Child("PhaseStartTime").PutAsync($"\"{DateTime.UtcNow.ToString("o")}\"");
+        await firebase.Child("games").Child(gameId).Child("Status").PutAsync("\"waiting\"");
+        await firebase.Child("games").Child(gameId).Child("WaitingForHunterShot").PutAsync(false);
+        // Có thể reset thêm các trường khác nếu bạn thêm custom
+    }
+
+    public async Task ResetAllPlayersState(string gameId)
+    {
+        var players = await GetPlayers(gameId);
+        foreach (var player in players)
+        {
+            player.IsAlive = true;
+            player.Role = null;
+            player.IsProtected = false;
+            player.IsPoisonedByWitch = false;
+            player.IsRevealed = false;
+            player.IsSilenced = false;
+            player.HasVotedToday = false;
+            player.HasUsedHealPotion = false;
+            player.HasUsedKillPotion = false;
+            player.CanShoot = false;
+            player.KillCount = 0;
+            player.VotesReceived = 0;
+            player.IsReady = false;
+            // Reset thêm các trường khác nếu có
+            await firebase.Child("games").Child(gameId).Child("players").Child(player.Id).PutAsync(player);
+        }
+    }
 }

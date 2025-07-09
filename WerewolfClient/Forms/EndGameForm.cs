@@ -33,6 +33,7 @@ namespace WerewolfClient.Forms
         private Button exitButton;
         private InGameForm inGameFormRef;
         private string gameId;
+        private GameRoomForm gameRoomFormRef;
 
         public EndGameForm(string resultText, List<Models.Player> players, string statsText, string gameId, string roomCode, bool isHost, TcpClient client)
         {
@@ -171,7 +172,6 @@ namespace WerewolfClient.Forms
                 if (gamePlayers != null && gamePlayers.Count > 0)
                 {
                     string names = string.Join(", ", gamePlayers.Select(p => p.Name));
-                    MessageBox.Show($"Danh sách người chơi: {names}", "DEBUG: Players");
                     InitializePlayerPanels();
                 }
                 else
@@ -218,6 +218,18 @@ namespace WerewolfClient.Forms
                 // Wire up button click events
                 buttonBackToLobby.Click += ButtonBackToLobby_Click;
                 buttonExit.Click += ButtonExit_Click;
+            }
+            catch (Exception ex)
+            {
+                string exMsg = ex.Message.ToLower();
+                if (exMsg.Contains("wsacancelblockingcall") || exMsg.Contains("a blocking operation was interrupted") || exMsg.Contains("unable to read data from the transport connection"))
+                {
+                    Console.WriteLine($"[INFO] Socket closed or interrupted during form switch: {ex.Message}");
+                }
+                else
+                {
+                    MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             finally
             {
@@ -359,8 +371,31 @@ namespace WerewolfClient.Forms
         }
 
         private void ButtonBackToLobby_Click(object sender, EventArgs e)
-        {
+        {   
             // Gọi cleanup mạng trước khi về lobby
+            if (inGameFormRef != null)
+            {
+                inGameFormRef.CleanupNetworkResources();
+                inGameFormRef.Close();
+            }
+            if (client != null)
+            {
+                client.Close();
+            }
+            this.Hide(); // Hide EndGameForm
+            // Show lại GameRoomForm cũ
+            if (gameRoomFormRef != null && !gameRoomFormRef.IsDisposed)
+            {
+                gameRoomFormRef.RejoinFromEndGame();
+            }
+            else
+            {
+                MessageBox.Show("Không tìm thấy phòng chờ cũ để quay lại.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void ButtonExit_Click(object sender, EventArgs e)
+        {
             if (inGameFormRef != null)
             {
                 inGameFormRef.CleanupNetworkResources();
@@ -373,11 +408,6 @@ namespace WerewolfClient.Forms
             LobbyForm lobbyForm = new LobbyForm(CurrentUserManager.CurrentUser?.Email);
             lobbyForm.FormClosed += (sender2, args) => this.Close();
             lobbyForm.Show();
-        }
-
-        private void ButtonExit_Click(object sender, EventArgs e)
-        {
-            // Xóa handler này
         }
 
         private void buttonBackToLobby_MouseEnter(object sender, EventArgs e)
@@ -425,6 +455,11 @@ namespace WerewolfClient.Forms
         public void SetInGameFormRef(InGameForm form)
         {
             inGameFormRef = form;
+        }
+
+        public void SetGameRoomFormRef(GameRoomForm form)
+        {
+            gameRoomFormRef = form;
         }
     }
 }

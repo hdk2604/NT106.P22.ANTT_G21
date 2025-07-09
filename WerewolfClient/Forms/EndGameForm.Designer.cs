@@ -119,6 +119,7 @@
             this.buttonBackToLobby.UseVisualStyleBackColor = false;
             this.buttonBackToLobby.MouseEnter += new System.EventHandler(this.buttonBackToLobby_MouseEnter);
             this.buttonBackToLobby.MouseLeave += new System.EventHandler(this.buttonBackToLobby_MouseLeave);
+            this.buttonBackToLobby.Click += new System.EventHandler(this.ButtonBackToLobby_Click);
             // 
             // buttonExit
             // 

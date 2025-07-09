@@ -78,10 +78,13 @@ namespace WerewolfClient.Forms
         private System.Windows.Forms.Timer deathCheckTimer;
         private bool isUpdatingDisplay = false; // Cờ để tránh update đồng thời
 
-        public InGameForm(List<string> playerNamesParam, TcpClient existingClient = null)
+        // Sửa constructor để nhận thêm roomCode
+        public InGameForm(List<string> playerNamesParam, string roomCode, TcpClient existingClient = null)
         {
             InitializeComponent();
             this.playerNamesFromConstructor = playerNamesParam;
+            this.roomCode = roomCode;
+            this.chatRoomId = roomCode; // Gán chatRoomId ngay từ đầu để chat hoạt động
             uiContext = SynchronizationContext.Current;
             Load += new System.EventHandler(this.Form1_Load);
             tableLayoutPanel1.Click += new System.EventHandler(this.TableLayoutPanel1_Click);
@@ -97,7 +100,8 @@ namespace WerewolfClient.Forms
             Console.WriteLine($"DIAGNOSTIC: roleIcons['dead'] loaded: {roleIcons.ContainsKey("dead") && roleIcons["dead"] != null}");
         }
 
-        public InGameForm() : this(new List<string>()) { }
+        // Sửa constructor mặc định nếu có
+        public InGameForm() : this(new List<string>(), null) { }
 
         private string placeholderText = "Nhập tin nhắn của bạn";
         private async void Form1_Load(object sender, EventArgs e)
@@ -174,6 +178,13 @@ namespace WerewolfClient.Forms
                     {
                         if (IsHandleCreated) labelLoading.Text = "Đang tải vai trò...";
                         await LoadCurrentUserRole();
+
+                        // Gọi ConnectToServer sau khi đã load CurrentUserName
+                        if (!isServerConnected)
+                        {
+                            Console.WriteLine($"[DEBUG] Form1_Load: Calling ConnectToServer after LoadCurrentUserRole");
+                            ConnectToServer();
+                        }
 
                         if (IsHandleCreated) labelLoading.Text = "Đang chuẩn bị giao diện người chơi...";
                         await UpdatePlayerDisplayAsync();
@@ -286,16 +297,22 @@ namespace WerewolfClient.Forms
                 if (richTextBox2.Text != placeholderText && !string.IsNullOrWhiteSpace(richTextBox2.Text))
                 {
                     string message = richTextBox2.Text.Trim();
+                    
                     if (!string.IsNullOrEmpty(message) && !string.IsNullOrEmpty(chatRoomId) && CurrentUserName != null)
                     {
                         SendMessage($"CHAT_MESSAGE:{chatRoomId}:{CurrentUserName}:{message}");
                         richTextBox2.Clear();
                         SetPlaceholder();
                     }
+                    else
+                    {
+                        MessageBox.Show($"[DEBUG] Conditions not met - message: {!string.IsNullOrEmpty(message)}, chatRoomId: {!string.IsNullOrEmpty(chatRoomId)}, CurrentUserName: {CurrentUserName != null}");
+                    }
                 }
             }
             catch (Exception ex)
             {
+                MessageBox.Show($"[DEBUG] Error in button1_Click: {ex.Message}");
                 MessageBox.Show($"Lỗi khi gửi tin nhắn: {ex.Message}", "Lỗi Gửi Tin Nhắn", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -304,6 +321,7 @@ namespace WerewolfClient.Forms
         {
             try
             {
+                
                 _cancellationTokenSource = new System.Threading.CancellationTokenSource();
 
                 if (existingClient != null && existingClient.Connected)
@@ -321,21 +339,33 @@ namespace WerewolfClient.Forms
                     {
                         SendMessage($"JOIN_ROOM:{chatRoomId}:{CurrentUserName}");
                     }
+                    else
+                    {
+                        MessageBox.Show($"[DEBUG] Cannot send JOIN_ROOM - chatRoomId: '{chatRoomId}', CurrentUserName: '{CurrentUserName}'");
+                    }
                 }
                 _receivingTask = Task.Run(() => StartReceivingAsync(_cancellationTokenSource.Token));
             }
             catch (Exception ex)
             {
-                isServerConnected = false;
-                tcpClient?.Close();
-                MessageBox.Show($"Không thể kết nối đến server chat: {ex.Message}", "Lỗi Kết Nối Chat", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                string exMsg = ex.Message.ToLower();
+                if (exMsg.Contains("wsacancelblockingcall") || exMsg.Contains("a blocking operation was interrupted") || exMsg.Contains("unable to read data from the transport connection"))
+                {
+                    Console.WriteLine($"[INFO] Socket closed or interrupted during form switch: {ex.Message}");
+                }
+                else
+                {
+                    MessageBox.Show($"Không thể kết nối đến server chat: {ex.Message}", "Lỗi Kết Nối Chat", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
         private void SendMessage(string message)
         {
+            
             if (!isServerConnected || tcpClient == null || !tcpClient.Connected || networkStream == null)
             {
+                MessageBox.Show($"[DEBUG] Connection check failed, setting isServerConnected = false");
                 isServerConnected = false; return;
             }
 
@@ -347,6 +377,7 @@ namespace WerewolfClient.Forms
             }
             catch (Exception ex)
             {
+                MessageBox.Show($"[DEBUG] Error sending message: {ex.Message}");
                 isServerConnected = false;
                 if (!this.IsDisposed && this.IsHandleCreated)
                 {
@@ -376,7 +407,9 @@ namespace WerewolfClient.Forms
 
                     if (bytesRead > 0)
                     {
-                        messageProcessingBuffer.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
+                        string receivedData = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                        
+                        messageProcessingBuffer.Append(receivedData);
                         string content = messageProcessingBuffer.ToString();
                         int newlineIndex;
                         while ((newlineIndex = content.IndexOf('\n')) >= 0)
@@ -392,21 +425,30 @@ namespace WerewolfClient.Forms
                     }
                     else
                     {
+                        MessageBox.Show($"[DEBUG] No bytes read, connection may be closed");
                         isServerConnected = false;
                         break;
                     }
                 }
             }
-            catch (OperationCanceledException) { isServerConnected = false; }
-            catch (System.IO.IOException) { isServerConnected = false; }
+            catch (OperationCanceledException) { 
+                isServerConnected = false; 
+            }
+            catch (ObjectDisposedException) { 
+                isServerConnected = false; 
+            }
+            catch (System.IO.IOException) { 
+                isServerConnected = false; 
+            }
             catch (Exception ex)
             {
-                isServerConnected = false;
-                if (!this.IsDisposed && this.IsHandleCreated)
+                if (ex.Message.Contains("WSACancelBlockingCall") || ex.Message.Contains("A blocking operation was interrupted"))
                 {
-                    uiContext.Post(_ => {
-                        MessageBox.Show($"Lỗi trong luồng nhận dữ liệu: {ex.Message}", "Lỗi Nhận Dữ Liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }, null);
+                    Console.WriteLine($"[INFO] Socket closed during form switch: {ex.Message}");
+                }
+                else
+                {
+                    MessageBox.Show($"Lỗi trong luồng nhận dữ liệu: {ex.Message}", "Lỗi Nhận Dữ Liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
         }
@@ -415,6 +457,8 @@ namespace WerewolfClient.Forms
         {
             string message = messageObj as string;
             if (message == null) return;
+            
+            
             try
             {
                 string[] parts = message.Split(':');
@@ -424,6 +468,7 @@ namespace WerewolfClient.Forms
                 }
 
                 string command = parts[0];
+                
                 switch (command)
                 {
                     case "CHAT_MESSAGE":
@@ -432,11 +477,15 @@ namespace WerewolfClient.Forms
                             string msgRoomId = parts[1];
                             string sender = parts[2];
                             string msg = string.Join(":", parts.Skip(3));
-                            Console.WriteLine($"[CLIENT] Nhận CHAT_MESSAGE từ server - roomId={parts[1]}, sender={parts[2]}, msg={string.Join(":", parts.Skip(3))}");
-                            Console.WriteLine($"[CLIENT] Local chatRoomId = {this.chatRoomId}");
 
                             if (msgRoomId == this.chatRoomId)
+                            {
                                 AddChatMessage(sender, msg);
+                            }
+                            else
+                            {
+                                MessageBox.Show($"[DEBUG] Room IDs don't match - received: {msgRoomId}, local: {this.chatRoomId}");
+                            }
                         }
                         break;
                     case "PLAYER_JOINED":
@@ -461,6 +510,7 @@ namespace WerewolfClient.Forms
             }
             catch (Exception ex)
             {
+                MessageBox.Show($"[DEBUG] Error in ProcessServerMessage: {ex.Message}");
                 if (!this.IsDisposed && this.IsHandleCreated)
                 {
                     MessageBox.Show($"Lỗi xử lý tin nhắn từ server: {ex.Message}", "Lỗi Xử Lý Tin Nhắn", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -470,6 +520,7 @@ namespace WerewolfClient.Forms
 
         private void AddChatMessage(string sender, string message)
         {
+            
             if (isGameReallyOver) return;
 
             if (this.IsDisposed || !this.IsHandleCreated || richTextBox1 == null || richTextBox1.IsDisposed) return;
@@ -496,8 +547,12 @@ namespace WerewolfClient.Forms
                 richTextBox1.SelectionFont = richTextBox1.Font;
                 richTextBox1.SelectionColor = richTextBox1.ForeColor;
                 richTextBox1.ScrollToCaret();
+                
             }
-            catch (Exception ex) { Console.WriteLine("Error adding chat: " + ex.Message); }
+            catch (Exception ex) { 
+                MessageBox.Show($"[DEBUG] Error adding chat: {ex.Message}");
+                Console.WriteLine("Error adding chat: " + ex.Message); 
+            }
         }
 
         private void OnPlayerJoined(string playerName)
@@ -791,10 +846,13 @@ namespace WerewolfClient.Forms
             this.chatRoomId = roomIdParam;
 
             Console.WriteLine($"DIAGNOSTIC InGameForm: SetFirebaseInfo called. UserID: {userId}, GameID: {gameIdParam}, IsHost: {isHostParam}, RoomID: {roomIdParam}");
-            if (!isServerConnected)
-            {
-                ConnectToServer();
-            }
+            
+            // Không gọi ConnectToServer ở đây nữa, để Form1_Load gọi sau khi đã load CurrentUserName
+            // if (!isServerConnected)
+            // {
+            //     ConnectToServer();
+            // }
+            
             // ***QUAN TRỌNG***: Gọi phương thức thiết lập listener trạng thái người chơi
             SetupPlayerStatusListener();
             // ***THÊM VÀO***: Đặt lại cờ hasDisplayedDeathMessage khi thiết lập thông tin game mới
@@ -1652,9 +1710,13 @@ namespace WerewolfClient.Forms
             this.BeginInvoke((MethodInvoker)delegate
             {
                 try
-                {
+                {   
                     var endGameForm = new EndGameForm(resultText, gamePlayers, statsText, gameId, roomCode, isHost, client);
                     endGameForm.SetInGameFormRef(this);
+                    if (gameRoomFormRef != null)
+                    {
+                        endGameForm.SetGameRoomFormRef(gameRoomFormRef);
+                    }
                     endGameForm.FormClosed += (s, e) => this.Close();
                     endGameForm.Show();
                     Console.WriteLine("DIAGNOSTIC InGameForm: End game form shown successfully");
@@ -1832,6 +1894,15 @@ namespace WerewolfClient.Forms
                 };
             }
             deathCheckTimer.Start();
+        }
+
+        // Thêm biến tham chiếu GameRoomForm
+        private GameRoomForm gameRoomFormRef;
+
+        // Thêm phương thức để set tham chiếu GameRoomForm
+        public void SetGameRoomFormRef(GameRoomForm form)
+        {
+            gameRoomFormRef = form;
         }
     }
 }
