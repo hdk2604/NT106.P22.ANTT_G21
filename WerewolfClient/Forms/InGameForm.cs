@@ -581,7 +581,9 @@ namespace WerewolfClient.Forms
             // Tiếp tục hiển thị log trong chat box
             List<string> phasesToIgnoreInChat = new List<string>
             {
-                "game_end"
+                "game_end",
+                "night_action_detail",
+                "night_result"
             };
 
             if (logEntry.Phase != null && phasesToIgnoreInChat.Contains(logEntry.Phase.ToLower()))
