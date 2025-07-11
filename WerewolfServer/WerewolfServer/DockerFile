@@ -1,0 +1,30 @@
+# Stage 1: Build the application
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
+WORKDIR /app
+
+# Copy the project file and restore dependencies
+# Assumes your project file is named WerewolfServer.csproj
+COPY ["WerewolfServer.csproj", "WerewolfServer/"]
+RUN dotnet restore "WerewolfServer/WerewolfServer.csproj"
+
+# Copy the rest of the application code
+COPY . "WerewolfServer/"
+WORKDIR /app/WerewolfServer
+
+# Publish the application for release
+# Use /p:UseAppHost=true to create a single executable file, easier for ENTRYPOINT
+RUN dotnet publish "WerewolfServer.csproj" -c Release -o /app/publish /p:UseAppHost=true
+
+# Stage 2: Create the final runtime image
+FROM mcr.microsoft.com/dotnet/runtime:8.0 AS final
+
+WORKDIR /app
+COPY --from=build /app/publish .
+
+# Expose the port your game server listens on (e.g., 8888)
+EXPOSE 8888
+
+# Define the entrypoint for the application
+# This should be the name of your executable (which is typically your project name)
+ENTRYPOINT ["./WerewolfServer"]
