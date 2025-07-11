@@ -90,7 +90,7 @@ namespace WerewolfClient.Forms
                 }
                 else
                 {
-                    client = new TcpClient("localhost", 8888);
+                    client = new TcpClient("45.77.109.153", 8888);  
                     stream = client.GetStream();
                     isConnected = true;
                     SendMessage($"JOIN_ROOM:{roomCode}:{playerName}");

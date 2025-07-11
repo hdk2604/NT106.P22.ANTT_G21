@@ -36,9 +36,13 @@ namespace WerewolfServer
         // ==================== MAIN SERVER METHODS ====================
         public async Task StartAsync()
         {
+            Console.WriteLine("[DEBUG] StartAsync() bắt đầu");
+
             _server = new TcpListener(IPAddress.Any, _port);
             _server.Start();
             _isRunning = true;
+            Console.WriteLine("[DEBUG] TcpListener đã Start()");
+
             Console.WriteLine($"=== WEREWOLF SERVER STARTED ===");
             Console.WriteLine($"Port: {_port}");
             Console.WriteLine($"Max Connections: {_connectionLimiter.MaxConnections}");
@@ -51,29 +55,31 @@ namespace WerewolfServer
                 while (_isRunning)
                 {
                     // Chờ connection mới với timeout
-                    var acceptTask = _server.AcceptTcpClientAsync();
+
+                   // var acceptTask = _server.AcceptTcpClientAsync();
                     var timeoutTask = Task.Delay(1000); // 1 second timeout
                     
-                    var completedTask = await Task.WhenAny(acceptTask, timeoutTask);
-                    
-                    if (completedTask == acceptTask)
+                 //   var completedTask = await Task.WhenAny(acceptTask, timeoutTask);
+                    //
+                      //  if (completedTask == acceptTask)
                     {
-                        var client = await acceptTask;
-                        
+
+                        var client = await _server.AcceptTcpClientAsync();
                         // Kiểm tra connection limit
                         if (await _connectionLimiter.TryAcquireConnectionAsync())
                         {
-                            // Xử lý client trong background task
-                            _ = Task.Run(async () => await HandleClientAsync(client));
-                        }
-                        else
-                        {
-                            Console.WriteLine("[SERVER] Connection limit reached, rejecting client");
-                            try
+
+                            _ = Task.Run(async () =>
                             {
-                                client.Close();
-                            }
-                            catch { }
+                                try
+                                {
+                                    await HandleClientAsync(client);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Console.WriteLine($"[ERROR] Lỗi khi xử lý client trong Task.Run: {ex.Message}");
+                                }
+                            });
                         }
                     }
                 }
@@ -98,7 +104,11 @@ namespace WerewolfServer
         // ==================== CLIENT HANDLING METHODS ====================
         private async Task HandleClientAsync(TcpClient client)
         {
+            Console.WriteLine("[DEBUG] >>> Đã vào HandleClientAsync");
+
             NetworkStream stream = client.GetStream();
+            Console.WriteLine("[SERVER] New client connected!");
+
             byte[] buffer = new byte[4096];
             Player player = null;
             StringBuilder receiveBuffer = new StringBuilder();
@@ -109,7 +119,8 @@ namespace WerewolfServer
                 {
                     // Async read không có timeout
                     int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
-                    
+                    Console.WriteLine($"[DEBUG] >>> Đã đọc {bytesRead} bytes");
+
                     if (bytesRead > 0)
                     {
                         receiveBuffer.Append(Encoding.UTF8.GetString(buffer, 0, bytesRead));
@@ -203,7 +214,7 @@ namespace WerewolfServer
                                 Console.WriteLine("[SERVER] Da tao room object");
                                 player = new Player(client, creatorName);
                                 Console.WriteLine("[SERVER] Da tao player object");
-                                response = $"ROOM_CREATED:{roomId}";
+                                response = $"ROOM_CREATED:{roomId}\n";
                                 Console.WriteLine("[SERVER] response=" + response);
                                 if (!string.IsNullOrEmpty(response))
                                 {
@@ -259,7 +270,7 @@ namespace WerewolfServer
                             }
                             else
                             {
-                                response = "JOIN_FAIL";
+                                response = "JOIN_FAIL\n";
                             }
                         }
                         break;
@@ -334,7 +345,7 @@ namespace WerewolfServer
                 }
                 catch { }
             }
-            
+            await client.GetStream().WriteAsync(Encoding.UTF8.GetBytes("JOIN_DUPLICATE\n"));
             return player;
         }
 
