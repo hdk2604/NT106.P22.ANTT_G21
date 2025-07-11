@@ -59,7 +59,8 @@ namespace WerewolfClient.Forms
             try
             {
                 // 1. Kết nối tới server
-                TcpClient client = new TcpClient("localhost", 8888);
+                TcpClient client = new TcpClient("45.77.109.153", 8888);
+
                 NetworkStream stream = client.GetStream();
 
                 // 2. Gửi CREATE_ROOM:<roomName>:<creatorName>
@@ -67,12 +68,15 @@ namespace WerewolfClient.Forms
                 string creatorName = CurrentUserManager.CurrentUser.Username;
                 string createRoomMsg = $"CREATE_ROOM:{roomName}:{creatorName}\n";
                 byte[] data = Encoding.UTF8.GetBytes(createRoomMsg);
-                stream.Write(data, 0, data.Length);
+                await stream.WriteAsync(data, 0, data.Length);
+                MessageBox.Show("📤 Đã gửi CREATE_ROOM tới server");
 
                 // 3. Nhận phản hồi ROOM_CREATED:<roomId>
                 byte[] buffer = new byte[1024];
-                int bytesRead = stream.Read(buffer, 0, buffer.Length);
+                int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
                 string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                MessageBox.Show($"📥 Server phản hồi: {response}");
+
                 string[] lines = response.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
                 string roomCreatedLine = lines.FirstOrDefault(l => l.StartsWith("ROOM_CREATED:"));
                 if (roomCreatedLine != null)
@@ -160,7 +164,7 @@ namespace WerewolfClient.Forms
                         try
                         {
                             // Kết nối tới server và gửi JOIN_ROOM
-                            TcpClient client = new TcpClient("localhost", 8888);
+                            TcpClient client = new TcpClient("45.77.109.153", 8888);
                             NetworkStream stream = client.GetStream();
                             string joinMsg = $"JOIN_ROOM:{roomId}:{CurrentUserManager.CurrentUser.Username}\n";
                             byte[] data = Encoding.UTF8.GetBytes(joinMsg);

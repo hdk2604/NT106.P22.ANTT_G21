@@ -332,7 +332,7 @@ namespace WerewolfClient.Forms
                 }
                 else
                 {
-                    tcpClient = new TcpClient("localhost", 8888);
+                    tcpClient = new TcpClient("45.77.109.153", 8888);
                     networkStream = tcpClient.GetStream();
                     isServerConnected = true;
                     if (!string.IsNullOrEmpty(chatRoomId) && !string.IsNullOrEmpty(CurrentUserName))
