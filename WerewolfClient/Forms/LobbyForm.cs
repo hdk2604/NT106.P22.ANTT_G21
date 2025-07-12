@@ -16,8 +16,7 @@ namespace WerewolfClient.Forms
 {
     public partial class LobbyForm : Form
     {
-        private string _email; // Renamed the private field to avoid ambiguity  
-        private FirebaseHelper _firebaseHelper;
+        private string _email;         private FirebaseHelper _firebaseHelper;
         private void LobbyForm_Resize(object sender, EventArgs e)
         {
             int margin = 50;
@@ -101,8 +100,8 @@ namespace WerewolfClient.Forms
                     await _firebaseHelper.AddPlayer(firebaseRoomId, player);
                     // Cập nhật CurrentPlayerCount = 1 cho host
                     await _firebaseHelper.firebase
-    .Child($"games/{firebaseRoomId}/CurrentPlayerCount")
-    .PutAsync(1.ToString());
+                        .Child($"games/{firebaseRoomId}/CurrentPlayerCount")
+                        .PutAsync(1.ToString());
 
                     // 6. Hiện GameRoomForm (truyền roomId từ server và client đã mở)
                     this.Hide();
