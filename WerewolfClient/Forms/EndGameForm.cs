@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using WerewolfClient.Models; // CurrentUserManager is in WerewolfClient.Models
+using WerewolfClient.Models;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
@@ -15,8 +15,6 @@ namespace WerewolfClient.Forms
 {
     public partial class EndGameForm : Form
     {
-        // Define a structure or use existing Player model for player data
-        // Assuming Player model from WerewolfClient.Models includes Name, Role, IsAlive
         private List<Models.Player> gamePlayers;
         private string gameResultText;
         private string gameStatsText;
@@ -187,8 +185,6 @@ namespace WerewolfClient.Forms
                 panelButtons.BackColor = Color.Transparent;
                 buttonBackToLobby.BackColor = Color.Transparent;
                 buttonExit.BackColor = Color.Transparent;
-                // Note: Making ListView transparent reliably is complex. 
-                // Its background might still obscure the form background.
 
                 // Set background image based on result
                 if (gameResultText.ToLower().Contains("sói chiến thắng"))

@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using Firebase.Database;
-using WerewolfClient.Models; // Đảm bảo bạn có class Player và GameLog ở đây
+using WerewolfClient.Models;
 using System.Threading.Tasks;
 using System.Text;
 using System.Threading;
@@ -62,7 +62,7 @@ namespace WerewolfClient.Forms
         private string currentActionButtonText;
         private System.Threading.CancellationTokenSource _cancellationTokenSource;
         private Task _receivingTask;
-        private IDisposable firebasePlayersListener; // <-- Listener chung cho tất cả players
+        private IDisposable firebasePlayersListener; // Listener chung cho tất cả players
         private System.Windows.Forms.Timer _updatePlayersDisplayDebounceTimer;
         private const int UpdatePlayersDisplayDebounceTimeMs = 500; // Tăng thời gian debounce
         private IDisposable firebaseGameLogListener;
@@ -72,9 +72,7 @@ namespace WerewolfClient.Forms
         private System.Windows.Forms.Timer phasePollingTimer;
         private string lastKnownPhase = null;
         private string lastKnownPhaseStartTime = null;
-
-        // ***THÊM/KIỂM TRA***: Biến cờ để kiểm soát thông báo chết
-        private bool hasDisplayedDeathMessage = false;
+        private bool hasDisplayedDeathMessage = false; //Cờ để kiểm soát thông báo chết
         private System.Windows.Forms.Timer deathCheckTimer;
         private bool isUpdatingDisplay = false; // Cờ để tránh update đồng thời
 
@@ -94,10 +92,6 @@ namespace WerewolfClient.Forms
 
             this.Visible = false;
             this.Opacity = 0;
-
-            // Debug: Kiểm tra DeadIcon có được load đúng không
-            Console.WriteLine($"DIAGNOSTIC: DeadIcon loaded: {Properties.Resources.DeadIcon != null}");
-            Console.WriteLine($"DIAGNOSTIC: roleIcons['dead'] loaded: {roleIcons.ContainsKey("dead") && roleIcons["dead"] != null}");
         }
 
         // Sửa constructor mặc định nếu có
@@ -241,11 +235,8 @@ namespace WerewolfClient.Forms
                 StartPhasePolling();
 
                 SetupGameLogListener(); // Listener cho game logs chung
-                // ***THÊM VÀO***: Gọi phương thức thiết lập listener trạng thái người chơi
                 SetupPlayerStatusListener();
-
-                // Thiết lập timer kiểm tra trạng thái người chơi
-                SetupDeathCheckTimer();
+                SetupDeathCheckTimer(); // timer kiểm tra trạng thái người chơi
 
                 await LoadExistingGameLogs();
             }
@@ -575,9 +566,6 @@ namespace WerewolfClient.Forms
 
             if (this.IsDisposed || !this.IsHandleCreated || richTextBox1 == null || richTextBox1.IsDisposed) return;
 
-            // ***ĐÃ LOẠI BỎ***: Logic kiểm tra cái chết dựa vào phân tích cú pháp tin nhắn đã được chuyển sang SetupPlayerStatusListener.
-            // Phương thức này giờ chỉ tập trung vào việc hiển thị log.
-
             // Tiếp tục hiển thị log trong chat box
             List<string> phasesToIgnoreInChat = new List<string>
             {
@@ -734,15 +722,13 @@ namespace WerewolfClient.Forms
 
                 gamePlayers = latestGamePlayers;
 
-                // Debug: In ra trạng thái của tất cả người chơi
+                // Debug: in ra trạng thái của tất cả người chơi
                 Console.WriteLine($"DIAGNOSTIC: Current players status:");
                 foreach (var player in gamePlayers)
                 {
                     Console.WriteLine($"  - {player?.Name}: IsAlive = {player?.IsAlive}");
                 }
 
-                // --- BỔ SUNG: HIỂN THỊ panelLoadingOverlay VÀ CẬP NHẬT TEXT CHO QUÁ TRÌNH CẬP NHẬT UI ---
-                // Điều này đảm bảo lớp phủ sẽ xuất hiện khi có thay đổi và trước khi các thao tác UI phức tạp bắt đầu.
                 if (panelLoadingOverlay != null)
                 {
                     panelLoadingOverlay.Dock = DockStyle.Fill; // Đảm bảo lớp phủ che toàn bộ Form
@@ -750,14 +736,12 @@ namespace WerewolfClient.Forms
                     panelLoadingOverlay.Visible = true; // Hiển thị lớp phủ
                     if (labelLoading != null)
                     {
-                        labelLoading.Text = "Đang cập nhật danh sách người chơi..."; // Thông báo chung cho quá trình này
+                        labelLoading.Text = "Đang cập nhật danh sách người chơi..."; // Thông báo chung cho quá trình
                     }
                 }
 
                 tableLayoutPanel1.SuspendLayout(); // Tạm dừng bố cục để tối ưu hiệu suất
 
-                // Logic tải vai trò người chơi hiện tại (nếu cần)
-                // Đoạn này có thể cập nhật labelLoading.Text với thông báo cụ thể hơn, ghi đè thông báo chung.
                 if (string.IsNullOrEmpty(currentUserRole) && !string.IsNullOrEmpty(currentUserId) && !string.IsNullOrEmpty(gameId))
                 {
                     if (panelLoadingOverlay != null && panelLoadingOverlay.Visible && labelLoading != null && !isGameReallyOver && IsHandleCreated)
@@ -861,8 +845,6 @@ namespace WerewolfClient.Forms
                 {
                     tableLayoutPanel1.ResumeLayout(true); // Tiếp tục bố cục lại UI
                 }
-                // --- ĐẢM BẢO panelLoadingOverlay LUÔN ĐƯỢC ẨN KHI HÀM KẾT THÚC ---
-                // Điều này rất quan trọng để lớp phủ không bị kẹt ở trạng thái hiển thị
                 if (panelLoadingOverlay != null)
                 {
                     panelLoadingOverlay.Visible = false;
@@ -885,14 +867,12 @@ namespace WerewolfClient.Forms
             // {
             //     ConnectToServer();
             // }
-            
-            // ***QUAN TRỌNG***: Gọi phương thức thiết lập listener trạng thái người chơi
+           
             SetupPlayerStatusListener();
-            // ***THÊM VÀO***: Đặt lại cờ hasDisplayedDeathMessage khi thiết lập thông tin game mới
             hasDisplayedDeathMessage = false;
         }
 
-        // ***THÊM/KIỂM TRA***: Phương thức thiết lập listener trạng thái người chơi
+        //Phương thức thiết lập listener trạng thái người chơi
         private void SetupPlayerStatusListener()
         {
             // Đảm bảo không tạo nhiều listener trùng lặp
@@ -1622,7 +1602,7 @@ namespace WerewolfClient.Forms
                     if (_updatePlayersDisplayDebounceTimer != null) { _updatePlayersDisplayDebounceTimer.Stop(); _updatePlayersDisplayDebounceTimer.Dispose(); _updatePlayersDisplayDebounceTimer = null; }
                     if (deathCheckTimer != null) { deathCheckTimer.Stop(); deathCheckTimer.Dispose(); deathCheckTimer = null; }
 
-                    // ***QUAN TRỌNG***: Đặt lại cờ khi thoát hoặc game mới
+                    //Đặt lại cờ khi thoát hoặc game mới
                     hasDisplayedDeathMessage = false;
 
                     if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
@@ -1658,7 +1638,7 @@ namespace WerewolfClient.Forms
             _updatePlayersDisplayDebounceTimer?.Stop(); _updatePlayersDisplayDebounceTimer?.Dispose(); _updatePlayersDisplayDebounceTimer = null;
             deathCheckTimer?.Stop(); deathCheckTimer?.Dispose(); deathCheckTimer = null;
 
-            // ***QUAN TRỌNG***: Đặt lại cờ khi form đóng
+            //Đặt lại cờ khi form đóng
             hasDisplayedDeathMessage = false;
 
             if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
@@ -1774,7 +1754,7 @@ namespace WerewolfClient.Forms
             _updatePlayersDisplayDebounceTimer?.Stop(); _updatePlayersDisplayDebounceTimer?.Dispose(); _updatePlayersDisplayDebounceTimer = null;
             deathCheckTimer?.Stop(); deathCheckTimer?.Dispose(); deathCheckTimer = null;
 
-            // ***QUAN TRỌNG***: Đặt lại cờ khi dọn dẹp tài nguyên
+            //Đặt lại cờ khi dọn dẹp tài nguyên
             hasDisplayedDeathMessage = false;
 
             if (_cancellationTokenSource != null && !_cancellationTokenSource.IsCancellationRequested)
@@ -1865,7 +1845,7 @@ namespace WerewolfClient.Forms
             }
         }
 
-        // ***THÊM VÀO***: Phương thức vô hiệu hóa các điều khiển
+        //Phương thức vô hiệu hóa các điều khiển
         private void DisablePlayerControls()
         {
             if (this.InvokeRequired)
